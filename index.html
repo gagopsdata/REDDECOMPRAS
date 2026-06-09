@@ -591,71 +591,45 @@ async function processPDF(f){
 function parsePDFText(text,fname){
   const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
   const results=[];
-  const totalRx=/^(total|subtotal|suma|resumen)/i;
-  const headerRx=/^(código|cod|descripción|descripcion|cant|fecha|chofer|sucursal|nro|número|picking|pagina|página|cuit|domicilio|tel|email|transporte|flete|volumen|peso|observ)/i;
+
+  // Patrón exacto del PDF de Red de Compras:
+  // CODIGO  DESCRIPCION  CANTIDAD,00  DD/MM/YYYY
+  // Ej: "11 ACEITES DE GIRASOL - ACEITE DE GIRASOL NATURA 900CC 6,00 9/6/2026"
+  const ROW_RE=/^(\d{1,6})\s+(.+?)\s+(\d{1,6}(?:[,.]\d{1,2})?)\s+\d{1,2}\/\d{1,2}\/\d{2,4}\s*$/;
+
+  const SKIP_RE=/^(código|cod[.:]|descripci[oó]n|cant[.:]|fecha|observaci|emitido|sucursal|cuit|domicilio|tel[eé]fono|email|red de|transporte|chofer|n[uú]mero|picking|p[aá]gina|volumen|peso|flete)/i;
 
   for(const line of lines){
-    // Separar por pipes (separador de columnas que armamos arriba)
-    const parts=line.split(' | ').map(p=>p.trim()).filter(Boolean);
-    if(parts.length<2)continue;
-
-    // Intentar detectar patrón: primer token es código numérico
-    // Patrón 1: "6 | ACEITES DE GIRASOL... | 15 | 4/6/2026"
-    // Patrón 2: "6 | ACEITES DE GIRASOL... | 15.00 | CLIENTE"
-    const first=parts[0];
-    const isCode=/^\d{1,6}$/.test(first);
-    if(!isCode)continue;
-
-    // Filtrar encabezados y totales
-    const desc=parts.slice(1,parts.length-1).join(' ').trim();
-    if(!desc||totalRx.test(desc)||headerRx.test(desc))continue;
-
-    // Último número que encontremos es la cantidad
-    let cantidad=0,cliente='',fechaFound='';
-    const cantCandidates=[];
-    for(let i=parts.length-1;i>=1;i--){
-      const v=parseFloat(parts[i].replace(',','.'));
-      if(!isNaN(v)&&v>0&&v<9999){cantCandidates.push({idx:i,val:v});break;}
-    }
-    if(!cantCandidates.length)continue;
-    cantidad=cantCandidates[0].val;
-
-    // Descripción = todo entre código y cantidad
-    const cantIdx=cantCandidates[0].idx;
-    const descParts=parts.slice(1,cantIdx);
-    const descStr=descParts.join(' - ').replace(/\s+/g,' ').trim();
-    if(!descStr||descStr.length<3)continue;
-
-    // Cliente = todo después de cantidad si existe
-    if(cantIdx<parts.length-1){
-      const after=parts.slice(cantIdx+1).join(' ');
-      // Si no parece fecha ni número, es cliente
-      if(!/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(after.trim()))cliente=after.trim();
-    }
-
-    results.push({codigo:first,descripcion:descStr,cantidad,cliente});
+    if(!line||SKIP_RE.test(line))continue;
+    const m=line.match(ROW_RE);
+    if(!m)continue;
+    const codigo=m[1];
+    const descripcion=m[2].trim();
+    const cantidad=parseFloat(m[3].replace(',','.'));
+    if(!descripcion||cantidad<=0)continue;
+    results.push({codigo,descripcion,cantidad,cliente:''});
   }
   return results;
 }
 
 function autoDetectPDFMeta(text){
-  // Número de picking
-  const numMatch=text.match(/(?:N[úu]mero|Nro|Picking)[:\s]+([A-Z]{2}\d{6,12})/i);
+  // Número de picking: "Número:ER010000818" o "Número: ER010000818"
+  const numMatch=text.match(/N[uú]mero:?\s*([A-Z]{2}\d{6,12})/i);
   if(numMatch)document.getElementById('m-num').value=numMatch[1];
-  // Sucursal
-  const sucMatch=text.match(/Sucursal[:\s]+([A-Z][A-Z ]{2,30})/i);
+
+  // Sucursal: "Sucursal: CASA CENTRAL" — cortar antes de "Página"
+  const sucMatch=text.match(/Sucursal:\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ]+?)(?:\s{2,}|\s+P[aá]gina|$)/im);
   if(sucMatch)document.getElementById('m-suc').value=sucMatch[1].trim();
-  // Chofer
-  const choMatch=text.match(/Chofer[:\s]+([A-Z][A-Z ]{2,30})/i);
+
+  // Chofer: "Chofer: MAXIMILIANO NUÑEZ" — cortar antes de "Flete"
+  const choMatch=text.match(/Chofer:\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ]+?)(?:\s{2,}|\s+Flete|$)/im);
   if(choMatch)document.getElementById('m-cho').value=choMatch[1].trim();
-  // Fecha
-  const fecMatch=text.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
+
+  // Fecha: primera DD/M/YYYY o DD/MM/YYYY del texto
+  const fecMatch=text.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if(fecMatch){
-    const parts=fecMatch[1].split(/[\/\-]/);
-    if(parts.length===3){
-      const y=parts[2].length===2?'20'+parts[2]:parts[2];
-      document.getElementById('m-fec').value=`${y}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
-    }
+    const[,d,mo,y]=fecMatch;
+    document.getElementById('m-fec').value=`${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
   }
 }
 function onSheetChange(){loadSheet(parseInt(document.getElementById('sheetSel').value))}
