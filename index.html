@@ -525,93 +525,100 @@ async function processPDF(f){
   document.getElementById('cardMeta').style.display='block';
 
   try{
-    // Configurar worker de PDF.js
-    if(typeof pdfjsLib==='undefined') throw new Error('PDF.js no cargó');
+    if(typeof pdfjsLib==='undefined') throw new Error('PDF.js no cargó. Necesitás conexión a internet la primera vez.');
     pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
     const arrayBuf=await f.arrayBuffer();
     const pdf=await pdfjsLib.getDocument({data:arrayBuf}).promise;
+
+    let allItems=[];
     let fullText='';
 
-    // Extraer texto de todas las páginas
     for(let p=1;p<=pdf.numPages;p++){
       const page=await pdf.getPage(p);
       const tc=await page.getTextContent();
-      // Reconstruir líneas agrupando items por posición Y
-      const items=tc.items.map(i=>({str:i.str.trim(),x:Math.round(i.transform[4]),y:Math.round(i.transform[5])}))
-        .filter(i=>i.str);
-      // Agrupar por Y (misma línea = misma Y ± 3px)
-      const lines={};
-      items.forEach(i=>{
-        const key=Math.round(i.y/4)*4; // bucket de 4px
-        if(!lines[key])lines[key]=[];
-        lines[key].push(i);
+      const vp=page.getViewport({scale:1});
+
+      tc.items.forEach(item=>{
+        if(!item.str.trim())return;
+        const x=Math.round(item.transform[4]);
+        const y=Math.round(vp.height - item.transform[5]);
+        allItems.push({x,y,str:item.str.trim(),page:p});
       });
-      // Ordenar líneas de arriba a abajo, items de izquierda a derecha
-      const sorted=Object.keys(lines).sort((a,b)=>b-a);
-      sorted.forEach(k=>{
-        const row=lines[k].sort((a,b)=>a.x-b.x);
-        fullText+=row.map(i=>i.str).join(' | ')+'\n';
-      });
+
+      fullText+=tc.items.map(i=>i.str).join(' ')+'\n';
     }
 
-    // Parsear el texto extraído
-    const parsed=parsePDFText(fullText,f.name);
-    if(!parsed.length){
-      showAlert('p1alert','⚠️ No se encontraron productos en el PDF. Verificá que sea un archivo de picking válido.','warn');
+    autoDetectPDFMeta(fullText);
+
+    // Layout Red de Compras (coordenadas X reales del PDF):
+    // Código:      x < 62
+    // Descripción: 62 <= x < 480
+    // Cantidad:    480 <= x < 530
+    // Fecha:       x >= 530
+    const COD_MAX=62, DESC_MAX=480, CANT_MAX=530;
+
+    const rowMap={};
+    allItems.forEach(item=>{
+      const key=item.page*100000 + Math.round(item.y/6)*6;
+      if(!rowMap[key])rowMap[key]={y:item.y,page:item.page,cod:[],desc:[],cant:[],fecha:[]};
+      const r=rowMap[key];
+      if(item.x<COD_MAX)       r.cod.push(item);
+      else if(item.x<DESC_MAX) r.desc.push(item);
+      else if(item.x<CANT_MAX) r.cant.push(item);
+      else                     r.fecha.push(item);
+    });
+
+    const SKIP_RE=/^(c[oó]digo|descripci|cant[.:]|fecha|observaci|emitido|sucursal|cuit|domicilio|tel|email|red de|transporte|chofer|n[uú]mero|picking|p[aá]gina|volumen|peso|flete)/i;
+
+    const results=[];
+    const sorted=Object.values(rowMap).sort((a,b)=>a.page-b.page||a.y-b.y);
+
+    for(const row of sorted){
+      const codStr=row.cod.map(i=>i.str).join('').trim();
+      const cantStr=row.cant.map(i=>i.str).join('').trim();
+      const descStr=row.desc.sort((a,b)=>a.x-b.x).map(i=>i.str).join(' ').trim();
+      const fechaStr=row.fecha.map(i=>i.str).join('').trim();
+
+      if(!/^\d{1,6}$/.test(codStr))continue;
+      if(!/\d{1,2}\/\d{1,2}\/\d{2,4}/.test(fechaStr))continue;
+      if(!descStr||SKIP_RE.test(descStr))continue;
+
+      const cantidad=parseFloat(cantStr.replace(',','.'));
+      if(isNaN(cantidad)||cantidad<=0)continue;
+
+      results.push({codigo:codStr,descripcion:descStr,cantidad,cliente:''});
+    }
+
+    if(!results.length){
+      showAlert('p1alert','⚠️ No se encontraron productos. Verificá que sea un PDF de picking de Red de Compras.','warn');
       return;
     }
 
-    // Cargar datos parseados directamente (sin mapeo de columnas)
     rawHeaders=['Código','Descripción','Cantidad','Cliente'];
-    rawRows=parsed.map(r=>[r.codigo,r.descripcion,r.cantidad,r.cliente]);
+    rawRows=results.map(r=>[r.codigo,r.descripcion,r.cantidad,r.cliente]);
     colCod=0;colDesc=1;colCant=2;colCliente=3;
 
+    const totalUds=results.reduce((s,r)=>s+r.cantidad,0);
     document.getElementById('fchip').innerHTML=`
       <div class="fchip"><span class="ico">📄</span>
-        <div><div class="nm">${f.name}</div><div class="mt">PDF · ${pdf.numPages} página${pdf.numPages>1?'s':''} · ${(f.size/1024).toFixed(1)} KB</div></div>
-        <button class="rm" onclick="clearFile()">✕</button></div>`;
+        <div>
+          <div class="nm">${f.name}</div>
+          <div class="mt">PDF · ${pdf.numPages} página${pdf.numPages>1?'s':''} · ${(f.size/1024).toFixed(1)} KB · <strong>${results.length} productos · ${totalUds} uds.</strong></div>
+        </div>
+        <button class="rm" onclick="clearFile()">✕</button>
+      </div>`;
 
-    // Mostrar preview rápida sin el mapper de columnas (ya viene estructurado)
     document.getElementById('cardCols').style.display='none';
     document.getElementById('cardMeta').style.display='block';
-
-    showAlert('p1alert',`✅ ${parsed.length} productos extraídos del PDF.`,'ok');
     document.getElementById('btnN1').disabled=false;
-
-    // Auto-detectar metadatos del PDF (número picking, sucursal)
-    autoDetectPDFMeta(fullText);
+    showAlert('p1alert',`✅ ${results.length} productos extraídos — ${totalUds} unidades totales.`,'ok');
 
   }catch(err){
     console.error(err);
-    showAlert('p1alert','❌ Error al procesar el PDF: '+err.message,'err');
+    showAlert('p1alert','❌ Error: '+err.message,'err');
   }
 }
-
-function parsePDFText(text,fname){
-  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
-  const results=[];
-
-  // Patrón exacto del PDF de Red de Compras:
-  // CODIGO  DESCRIPCION  CANTIDAD,00  DD/MM/YYYY
-  // Ej: "11 ACEITES DE GIRASOL - ACEITE DE GIRASOL NATURA 900CC 6,00 9/6/2026"
-  const ROW_RE=/^(\d{1,6})\s+(.+?)\s+(\d{1,6}(?:[,.]\d{1,2})?)\s+\d{1,2}\/\d{1,2}\/\d{2,4}\s*$/;
-
-  const SKIP_RE=/^(código|cod[.:]|descripci[oó]n|cant[.:]|fecha|observaci|emitido|sucursal|cuit|domicilio|tel[eé]fono|email|red de|transporte|chofer|n[uú]mero|picking|p[aá]gina|volumen|peso|flete)/i;
-
-  for(const line of lines){
-    if(!line||SKIP_RE.test(line))continue;
-    const m=line.match(ROW_RE);
-    if(!m)continue;
-    const codigo=m[1];
-    const descripcion=m[2].trim();
-    const cantidad=parseFloat(m[3].replace(',','.'));
-    if(!descripcion||cantidad<=0)continue;
-    results.push({codigo,descripcion,cantidad,cliente:''});
-  }
-  return results;
-}
-
 function autoDetectPDFMeta(text){
   // Número de picking: "Número:ER010000818" o "Número: ER010000818"
   const numMatch=text.match(/N[uú]mero:?\s*([A-Z]{2}\d{6,12})/i);
@@ -636,8 +643,16 @@ function onSheetChange(){loadSheet(parseInt(document.getElementById('sheetSel').
 function loadSheet(idx){
   const ws=wb.Sheets[sheetNames[idx]];
   const all=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+
+  // Buscar fila encabezado: la primera que tenga palabras clave de columna
+  // Busca hasta la fila 20 para cubrir archivos con encabezados en fila 15-16
+  const HDR_RX=/c[oó]d|desc|cant|fecha|art[íi]c|product|item|sku/i;
   let hr=0;
-  for(let i=0;i<Math.min(10,all.length);i++){if(all[i].filter(c=>String(c).trim()).length>=2){hr=i;break;}}
+  for(let i=0;i<Math.min(20,all.length);i++){
+    const nonEmpty=all[i].filter(x=>String(x).trim());
+    if(nonEmpty.some(x=>HDR_RX.test(String(x)))){hr=i;break;}
+  }
+
   rawHeaders=all[hr].map(h=>String(h||'').trim());
   rawRows=all.slice(hr+1).filter(r=>r.some(c=>String(c).trim()));
   autoDetect();renderColMapper();updateN1();
