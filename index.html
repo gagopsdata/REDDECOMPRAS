@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Picking — Red de Compras</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 <style>
@@ -207,10 +208,10 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
   <div class="card">
     <div class="ct">Subir archivo del pedido</div>
     <div class="dz" id="dz">
-      <input type="file" id="fileIn" accept=".xlsx,.xls,.csv" onchange="onFile(event)">
+      <input type="file" id="fileIn" accept=".xlsx,.xls,.csv,.pdf" onchange="onFile(event)">
       <span class="dz-ico">📊</span>
-      <div class="dz-ttl">Arrastrá el Excel acá o hacé clic</div>
-      <div class="dz-sub">.xlsx · .xls · .csv</div>
+      <div class="dz-ttl">Arrastrá el archivo acá o hacé clic</div>
+      <div class="dz-sub">.xlsx · .xls · .csv · .pdf</div>
     </div>
     <div id="fchip"></div>
   </div>
@@ -488,6 +489,15 @@ function confirmar(){
 // ══ FILE ══
 function onFile(e){const f=e.target.files[0];if(f)processFile(f)}
 function processFile(f){
+  if(f.name.toLowerCase().endsWith('.pdf')){
+    processPDF(f);
+  } else {
+    processExcel(f);
+  }
+}
+
+// ══ EXCEL ══
+function processExcel(f){
   const r=new FileReader();
   r.onload=ev=>{
     try{
@@ -503,9 +513,150 @@ function processFile(f){
       document.getElementById('cardCols').style.display='block';
       document.getElementById('cardMeta').style.display='block';
       showAlert('p1alert','','');
-    }catch(e){showAlert('p1alert','❌ No se pudo leer el archivo.','err')}
+    }catch(e){showAlert('p1alert','❌ No se pudo leer el archivo Excel.','err')}
   };
   r.readAsArrayBuffer(f);
+}
+
+// ══ PDF ══
+async function processPDF(f){
+  showAlert('p1alert','⏳ Leyendo PDF...','info');
+  document.getElementById('cardCols').style.display='none';
+  document.getElementById('cardMeta').style.display='block';
+
+  try{
+    // Configurar worker de PDF.js
+    if(typeof pdfjsLib==='undefined') throw new Error('PDF.js no cargó');
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const arrayBuf=await f.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:arrayBuf}).promise;
+    let fullText='';
+
+    // Extraer texto de todas las páginas
+    for(let p=1;p<=pdf.numPages;p++){
+      const page=await pdf.getPage(p);
+      const tc=await page.getTextContent();
+      // Reconstruir líneas agrupando items por posición Y
+      const items=tc.items.map(i=>({str:i.str.trim(),x:Math.round(i.transform[4]),y:Math.round(i.transform[5])}))
+        .filter(i=>i.str);
+      // Agrupar por Y (misma línea = misma Y ± 3px)
+      const lines={};
+      items.forEach(i=>{
+        const key=Math.round(i.y/4)*4; // bucket de 4px
+        if(!lines[key])lines[key]=[];
+        lines[key].push(i);
+      });
+      // Ordenar líneas de arriba a abajo, items de izquierda a derecha
+      const sorted=Object.keys(lines).sort((a,b)=>b-a);
+      sorted.forEach(k=>{
+        const row=lines[k].sort((a,b)=>a.x-b.x);
+        fullText+=row.map(i=>i.str).join(' | ')+'\n';
+      });
+    }
+
+    // Parsear el texto extraído
+    const parsed=parsePDFText(fullText,f.name);
+    if(!parsed.length){
+      showAlert('p1alert','⚠️ No se encontraron productos en el PDF. Verificá que sea un archivo de picking válido.','warn');
+      return;
+    }
+
+    // Cargar datos parseados directamente (sin mapeo de columnas)
+    rawHeaders=['Código','Descripción','Cantidad','Cliente'];
+    rawRows=parsed.map(r=>[r.codigo,r.descripcion,r.cantidad,r.cliente]);
+    colCod=0;colDesc=1;colCant=2;colCliente=3;
+
+    document.getElementById('fchip').innerHTML=`
+      <div class="fchip"><span class="ico">📄</span>
+        <div><div class="nm">${f.name}</div><div class="mt">PDF · ${pdf.numPages} página${pdf.numPages>1?'s':''} · ${(f.size/1024).toFixed(1)} KB</div></div>
+        <button class="rm" onclick="clearFile()">✕</button></div>`;
+
+    // Mostrar preview rápida sin el mapper de columnas (ya viene estructurado)
+    document.getElementById('cardCols').style.display='none';
+    document.getElementById('cardMeta').style.display='block';
+
+    showAlert('p1alert',`✅ ${parsed.length} productos extraídos del PDF.`,'ok');
+    document.getElementById('btnN1').disabled=false;
+
+    // Auto-detectar metadatos del PDF (número picking, sucursal)
+    autoDetectPDFMeta(fullText);
+
+  }catch(err){
+    console.error(err);
+    showAlert('p1alert','❌ Error al procesar el PDF: '+err.message,'err');
+  }
+}
+
+function parsePDFText(text,fname){
+  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  const results=[];
+  const totalRx=/^(total|subtotal|suma|resumen)/i;
+  const headerRx=/^(código|cod|descripción|descripcion|cant|fecha|chofer|sucursal|nro|número|picking|pagina|página|cuit|domicilio|tel|email|transporte|flete|volumen|peso|observ)/i;
+
+  for(const line of lines){
+    // Separar por pipes (separador de columnas que armamos arriba)
+    const parts=line.split(' | ').map(p=>p.trim()).filter(Boolean);
+    if(parts.length<2)continue;
+
+    // Intentar detectar patrón: primer token es código numérico
+    // Patrón 1: "6 | ACEITES DE GIRASOL... | 15 | 4/6/2026"
+    // Patrón 2: "6 | ACEITES DE GIRASOL... | 15.00 | CLIENTE"
+    const first=parts[0];
+    const isCode=/^\d{1,6}$/.test(first);
+    if(!isCode)continue;
+
+    // Filtrar encabezados y totales
+    const desc=parts.slice(1,parts.length-1).join(' ').trim();
+    if(!desc||totalRx.test(desc)||headerRx.test(desc))continue;
+
+    // Último número que encontremos es la cantidad
+    let cantidad=0,cliente='',fechaFound='';
+    const cantCandidates=[];
+    for(let i=parts.length-1;i>=1;i--){
+      const v=parseFloat(parts[i].replace(',','.'));
+      if(!isNaN(v)&&v>0&&v<9999){cantCandidates.push({idx:i,val:v});break;}
+    }
+    if(!cantCandidates.length)continue;
+    cantidad=cantCandidates[0].val;
+
+    // Descripción = todo entre código y cantidad
+    const cantIdx=cantCandidates[0].idx;
+    const descParts=parts.slice(1,cantIdx);
+    const descStr=descParts.join(' - ').replace(/\s+/g,' ').trim();
+    if(!descStr||descStr.length<3)continue;
+
+    // Cliente = todo después de cantidad si existe
+    if(cantIdx<parts.length-1){
+      const after=parts.slice(cantIdx+1).join(' ');
+      // Si no parece fecha ni número, es cliente
+      if(!/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(after.trim()))cliente=after.trim();
+    }
+
+    results.push({codigo:first,descripcion:descStr,cantidad,cliente});
+  }
+  return results;
+}
+
+function autoDetectPDFMeta(text){
+  // Número de picking
+  const numMatch=text.match(/(?:N[úu]mero|Nro|Picking)[:\s]+([A-Z]{2}\d{6,12})/i);
+  if(numMatch)document.getElementById('m-num').value=numMatch[1];
+  // Sucursal
+  const sucMatch=text.match(/Sucursal[:\s]+([A-Z][A-Z ]{2,30})/i);
+  if(sucMatch)document.getElementById('m-suc').value=sucMatch[1].trim();
+  // Chofer
+  const choMatch=text.match(/Chofer[:\s]+([A-Z][A-Z ]{2,30})/i);
+  if(choMatch)document.getElementById('m-cho').value=choMatch[1].trim();
+  // Fecha
+  const fecMatch=text.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
+  if(fecMatch){
+    const parts=fecMatch[1].split(/[\/\-]/);
+    if(parts.length===3){
+      const y=parts[2].length===2?'20'+parts[2]:parts[2];
+      document.getElementById('m-fec').value=`${y}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+    }
+  }
 }
 function onSheetChange(){loadSheet(parseInt(document.getElementById('sheetSel').value))}
 function loadSheet(idx){
