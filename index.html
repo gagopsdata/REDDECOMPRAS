@@ -582,15 +582,72 @@ function loadSheet(idx){
   autoDetect();renderColMapper();updateN1();
 }
 function autoDetect(){
-  colCod=-1;colDesc=-1;colCant=-1;
+  colCod=-1;colDesc=-1;colCant=-1;colCliente=-1;
+
+  // Paso 1: buscar por nombre de encabezado
   rawHeaders.forEach((h,i)=>{
-    const l=h.toLowerCase();
+    const l=h.toLowerCase().trim();
+    if(!l)return; // ignorar columnas sin encabezado
     if(/c[oó]d|code|art[íi]c|item|sku/.test(l)&&colCod===-1)colCod=i;
     if(/desc|product|nombre|detalle/.test(l)&&colDesc===-1)colDesc=i;
     if(/cant|qty|unid|unit|pedido/.test(l)&&colCant===-1)colCant=i;
     if(/client|sucurs|destino|razon|razón|local|negocio/.test(l)&&colCliente===-1)colCliente=i;
   });
-  if(colDesc===-1&&rawHeaders.length>=2){colCod=0;colDesc=1;if(rawHeaders.length>=3)colCant=2;}
+
+  // Paso 2: si no se detectaron, inferir por contenido de las primeras filas
+  if(colDesc===-1||colCant===-1){
+    // Analizar primeras 5 filas de datos para inferir columnas
+    const sample=rawRows.slice(0,5).filter(r=>r.length>0);
+    if(sample.length>0){
+      const colCount=Math.max(...sample.map(r=>r.length));
+      const colScores={cod:[], desc:[], cant:[]};
+
+      for(let i=0;i<colCount;i++){
+        let numCount=0, longTextCount=0, shortTextCount=0;
+        sample.forEach(r=>{
+          const v=String(r[i]||'').trim();
+          if(!v)return;
+          if(/^\d{1,6}$/.test(v))numCount++;
+          else if(v.length>15)longTextCount++;
+          else if(v.length>0&&v.length<=15)shortTextCount++;
+        });
+        colScores.cod.push({i,score:numCount});
+        colScores.desc.push({i,score:longTextCount});
+        colScores.cant.push({i,score:numCount>0&&longTextCount===0?numCount:0});
+      }
+
+      // Código: columna con más números cortos, excluyendo ya asignadas
+      if(colCod===-1){
+        const best=colScores.cod.sort((a,b)=>b.score-a.score)[0];
+        if(best&&best.score>0)colCod=best.i;
+      }
+      // Descripción: columna con textos más largos
+      if(colDesc===-1){
+        const best=colScores.desc
+          .filter(x=>x.i!==colCod)
+          .sort((a,b)=>b.score-a.score)[0];
+        if(best&&best.score>0)colDesc=best.i;
+      }
+      // Cantidad: segunda columna numérica distinta del código
+      if(colCant===-1){
+        const numCols=colScores.cod
+          .filter(x=>x.i!==colCod&&x.score>0)
+          .sort((a,b)=>b.score-a.score);
+        if(numCols.length>0)colCant=numCols[0].i;
+      }
+    }
+  }
+
+  // Paso 3: fallback mínimo si sigue sin detectar
+  if(colDesc===-1&&colCod>=0){
+    // Buscar la primera columna de texto largo después del código
+    const sample=rawRows.slice(0,3);
+    for(let i=0;i<(rawHeaders.length||10);i++){
+      if(i===colCod)continue;
+      const vals=sample.map(r=>String(r[i]||'').trim()).filter(Boolean);
+      if(vals.some(v=>v.length>10&&!/^\d+$/.test(v))){colDesc=i;break;}
+    }
+  }
 }
 function renderColMapper(){
   const sel=(id,val,lbl)=>`<div class="fld"><label>${lbl}</label>
