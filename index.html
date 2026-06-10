@@ -944,21 +944,16 @@ function exportPDF(){
     const hex=p.color.replace('#','');
     const pr=parseInt(hex.slice(0,2),16),pg=parseInt(hex.slice(2,4),16),pb=parseInt(hex.slice(4,6),16);
 
+    // Encabezado de pasillo — solo título de sección, sin repetir cabecera de columnas
+    doc.setFillColor(pr,pg,pb);
+    doc.rect(10,y,190,6,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(255,255,255);
+    doc.text(`P${p.num} — ${p.nombre.replace(/^Pasillo \d+ — /,'')}  ·  ${items.length} ítems · ${sub} uds.`,13,y+4.2);
+    y+=7;
+
     doc.autoTable({
       startY:y,
-      // Encabezado de pasillo en una sola fila compacta
-      head:[
-        [{content:`P${p.num} — ${p.nombre.replace(/^Pasillo \d+ — /,'')} · ${items.length} ítems · ${sub} uds.`,colSpan:5,
-          styles:{fillColor:[pr,pg,pb],textColor:255,fontStyle:'bold',fontSize:8.5,cellPadding:2}}],
-        // Columnas: Nro Pasillo · Código · Descripción · Cant · Cliente
-        [
-          {content:'Pasillo',styles:{halign:'center'}},
-          {content:'Código', styles:{halign:'center'}},
-          'Descripción',
-          {content:'Cant.',styles:{halign:'center'}},
-          'Cliente'
-        ]
-      ],
+      head:false,   // sin encabezado de columnas
       body:items.map(r=>[
         `P${p.num}`,
         r.codigo,
@@ -966,28 +961,22 @@ function exportPDF(){
         r.cantidad,
         r.cliente||m.suc
       ]),
-      foot:[[
-        {content:'SUBTOTAL',colSpan:3,styles:{halign:'right'}},
-        {content:sub,styles:{halign:'center'}},
-        ''
-      ]],
-      headStyles:{fillColor:[pr,pg,pb],textColor:255,fontStyle:'bold',fontSize:8},
-      footStyles:{fillColor:[44,62,80],textColor:255,fontStyle:'bold',fontSize:8},
+      showHead:false,   // sin encabezado
+      showFoot:false,   // sin subtotal
       bodyStyles:{fontSize:8,cellPadding:1.8},
       alternateRowStyles:{fillColor:[248,249,250]},
       columnStyles:{
-        0:{cellWidth:13,halign:'center'},   // Pasillo
-        1:{cellWidth:14,halign:'center'},   // Código
-        2:{cellWidth:'auto'},               // Descripción
-        3:{cellWidth:13,halign:'center',fontStyle:'bold'},  // Cant
-        4:{cellWidth:28}                    // Cliente
+        0:{cellWidth:13,halign:'center'},
+        1:{cellWidth:14,halign:'center'},
+        2:{cellWidth:'auto'},
+        3:{cellWidth:13,halign:'center',fontStyle:'bold'},
+        4:{cellWidth:28}
       },
       margin:{left:10,right:10},
-      showFoot:'lastPage',
       tableLineColor:[220,220,220],
       tableLineWidth:0.1,
     });
-    y=doc.lastAutoTable.finalY+4;
+    y=doc.lastAutoTable.finalY+2;  // espacio mínimo entre pasillos
     if(y>272){doc.addPage();y=12;}
   });
 
