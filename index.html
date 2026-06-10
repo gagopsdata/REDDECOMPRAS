@@ -648,6 +648,20 @@ function autoDetect(){
       if(vals.some(v=>v.length>10&&!/^\d+$/.test(v))){colDesc=i;break;}
     }
   }
+
+  // Paso 4: fallback cliente — columna con texto repetido no numérico (ej: "CASA CENTRAL")
+  if(colCliente===-1){
+    const sample=rawRows.slice(0,5).filter(r=>r.length>0);
+    for(let i=0;i<(rawHeaders.length||10);i++){
+      if(i===colCod||i===colDesc||i===colCant)continue;
+      const vals=sample.map(r=>String(r[i]||'').trim()).filter(Boolean);
+      // Cliente: texto no numérico, longitud media (3-40), mismo valor repetido
+      const unique=[...new Set(vals)];
+      if(vals.length>=2&&unique.length<=2&&vals[0].length>2&&!/^\d+$/.test(vals[0])){
+        colCliente=i;break;
+      }
+    }
+  }
 }
 function renderColMapper(){
   const sel=(id,val,lbl)=>`<div class="fld"><label>${lbl}</label>
@@ -808,7 +822,7 @@ function renderAssign(q=''){
       <td style="font-size:12px;color:var(--tg)">${esc(r.codigo)}</td>
       <td>${esc(r.descripcion)}</td>
       <td style="font-size:12px">
-        <input type="text" value="${esc(r.cliente)}" placeholder="—"
+        <input type="text" value="${esc(r.cliente)}" placeholder="${esc(getMeta().suc||'—')}"
           style="width:100%;padding:4px 7px;border:1.5px solid var(--bd);border-radius:5px;font-size:12px;outline:none;font-family:inherit"
           onfocus="this.style.borderColor='var(--rojo)'" onblur="this.style.borderColor='var(--bd)'"
           onchange="data[${r._i}].cliente=this.value">
