@@ -109,90 +109,14 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
 .block-banner{background:#FDEDEC;border:2px solid #E74C3C;border-radius:9px;padding:1rem 1.2rem;display:flex;align-items:center;gap:10px;font-size:13px;color:#922B21;font-weight:600;margin-bottom:1rem}
 @media(max-width:640px){.g2,.g3,.metrics{grid-template-columns:1fr 1fr}.dl-grid{grid-template-columns:1fr}.toolbar{flex-direction:column;align-items:stretch}.search{width:100%}}
 
-/* ══ LOGIN ══ */
-#loginOverlay{position:fixed;inset:0;background:var(--azul);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:0}
-.login-box{background:#fff;border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,.35)}
-.login-logo{text-align:center;margin-bottom:1.5rem}
-.login-logo .badge{background:var(--rojo);color:#fff;font-size:13px;font-weight:700;padding:5px 14px;border-radius:5px;letter-spacing:.8px;display:inline-block;margin-bottom:.5rem}
-.login-logo h2{font-size:17px;color:var(--azul);font-weight:600}
-.login-logo p{font-size:12px;color:var(--tg);margin-top:3px}
-.lfield{margin-bottom:1rem}
-.lfield label{font-size:11px;font-weight:700;color:var(--tg);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
-.lfield input{width:100%;padding:10px 13px;border:1.5px solid var(--bd);border-radius:8px;font-size:14px;outline:none;transition:border-color .18s;font-family:inherit}
-.lfield input:focus{border-color:var(--rojo)}
-.login-err{background:#FDEDEC;border:1px solid #F5B7B1;color:#922B21;border-radius:7px;padding:.6rem .9rem;font-size:13px;margin-bottom:.9rem;display:none}
-.login-btn{width:100%;padding:11px;background:var(--rojo);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;transition:background .15s;font-family:inherit}
-.login-btn:hover{background:var(--rojo-d)}
-.login-footer{text-align:center;margin-top:1rem;font-size:11px;color:var(--tg)}
-/* Panel gestión usuarios */
-#userMgr{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:8888;display:none;align-items:center;justify-content:center}
-#userMgr.open{display:flex}
-.umgr-box{background:#fff;border-radius:12px;padding:1.5rem;width:100%;max-width:480px;box-shadow:0 8px 40px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto}
-.umgr-title{font-size:15px;font-weight:700;color:var(--azul);margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center}
-.u-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd)}
-.u-name{flex:1;font-size:13px;font-weight:600}
-.u-role{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600}
-.u-admin{background:#EBF5FB;color:#1A5276;border:1px solid #AED6F1}
-.u-oper{background:#EAFAF1;color:#1E8449;border:1px solid #A9DFBF}
-.u-last{font-size:11px;color:var(--tg);min-width:80px;text-align:right}
+
 </style>
 </head>
 <body>
 
-<!-- ══ LOGIN OVERLAY ══ -->
-<div id="loginOverlay">
-  <div class="login-box">
-    <div class="login-logo">
-      <div class="badge">RED DE COMPRAS</div>
-      <h2>Sistema de Picking</h2>
-      <p>Ingresá tus credenciales para continuar</p>
-    </div>
-    <div class="login-err" id="loginErr">Usuario o contraseña incorrectos</div>
-    <div class="lfield">
-      <label>Usuario</label>
-      <input type="text" id="loginUser" placeholder="usuario" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
-    </div>
-    <div class="lfield">
-      <label>Contraseña</label>
-      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
-    </div>
-    <button class="login-btn" onclick="doLogin()">Ingresar</button>
-    <div class="login-footer">Red de Compras SAS · v1.0</div>
-  </div>
-</div>
-
-<!-- ══ PANEL GESTIÓN USUARIOS (solo admin) ══ -->
-<div id="userMgr">
-  <div class="umgr-box">
-    <div class="umgr-title">
-      <span>👤 Gestión de usuarios</span>
-      <button onclick="closeUserMgr()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--tg)">✕</button>
-    </div>
-    <div id="userList"></div>
-    <div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--bd)">
-      <div style="font-size:12px;font-weight:700;color:var(--tg);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.75rem">Agregar usuario</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <input type="text" id="nuUser" placeholder="Usuario" style="flex:1;min-width:100px;padding:7px 10px;border:1.5px solid var(--bd);border-radius:7px;font-size:13px;outline:none;font-family:inherit">
-        <input type="password" id="nuPass" placeholder="Contraseña" style="flex:1;min-width:100px;padding:7px 10px;border:1.5px solid var(--bd);border-radius:7px;font-size:13px;outline:none;font-family:inherit">
-        <select id="nuRole" style="padding:7px 10px;border:1.5px solid var(--bd);border-radius:7px;font-size:13px;outline:none;font-family:inherit">
-          <option value="operador">Operador</option>
-          <option value="admin">Admin</option>
-        </select>
-        <button class="btn btn-r btn-sm" onclick="addUser()">+ Agregar</button>
-      </div>
-      <div id="umgrMsg" style="margin-top:.5rem;font-size:13px"></div>
-    </div>
-  </div>
-</div>
-
 <div class="topbar">
   <div class="t-logo"><span class="t-badge">RED DE COMPRAS</span><span class="t-title">Sistema de Picking</span></div>
-  <div style="display:flex;align-items:center;gap:8px">
-    <span class="t-chip" id="topUser"></span>
-    <button id="btnUserMgr" onclick="openUserMgr()" style="display:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#ECF0F1;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">👥 Usuarios</button>
-    <button onclick="logout()" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#ECF0F1;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer">Salir</button>
-    <span class="t-chip" id="topChip">—</span>
-  </div>
+  <span class="t-chip" id="topChip">—</span>
 </div>
 <div class="steps">
   <button class="step active" id="s1" onclick="goStep(1)"><span class="sn">1</span> Cargar Excel</button>
@@ -1003,38 +927,77 @@ function exportPDF(){
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
   const tot=data.reduce((s,r)=>s+r.cantidad,0);
-  doc.setFillColor(44,62,80);doc.rect(0,0,210,16,'F');
-  doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(255,255,255);
-  doc.text('RED DE COMPRAS SAS',15,9);
-  doc.setFont('helvetica','normal');doc.setFontSize(8);
-  doc.text(`Picking ${m.num}  ·  ${m.suc}  ·  ${m.cho}  ·  ${m.fec}`,15,14);
-  doc.text(`${data.length} prods · ${tot} uds.`,195,9,{align:'right'});
-  let y=20;
+
+  // ── Encabezado compacto ──
+  doc.setFillColor(44,62,80);doc.rect(0,0,210,12,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(255,255,255);
+  doc.text('RED DE COMPRAS SAS',15,8);
+  doc.setFont('helvetica','normal');doc.setFontSize(7.5);
+  doc.text(`Picking ${m.num}  ·  ${m.suc}  ·  ${m.cho?m.cho+' · ':''}${m.fec}`,15,11.5);
+  doc.text(`${data.length} prods · ${tot} uds.`,195,8,{align:'right'});
+
+  let y=15;
   sortedPasillos().filter(p=>data.some(r=>r.pasillo_num===p.num)).forEach(p=>{
-    const items=data.filter(r=>r.pasillo_num===p.num).sort((a,b)=>a.descripcion.localeCompare(b.descripcion,'es'));
+    const items=data.filter(r=>r.pasillo_num===p.num)
+      .sort((a,b)=>a.descripcion.localeCompare(b.descripcion,'es'));
     const sub=items.reduce((s,r)=>s+r.cantidad,0);
     const hex=p.color.replace('#','');
     const pr=parseInt(hex.slice(0,2),16),pg=parseInt(hex.slice(2,4),16),pb=parseInt(hex.slice(4,6),16);
+
     doc.autoTable({
       startY:y,
-      head:[[{content:`📦 Pasillo ${p.num} — ${p.nombre.replace(/^Pasillo \d+ — /,'')}  ·  ${items.length} ítems · ${sub} uds.`,colSpan:4}],['Código','Descripción','Cliente','Cant.']],
-      body:items.map(r=>[r.codigo,r.descripcion,r.cliente||m.suc,r.cantidad]),
-      foot:[[{content:`Subtotal`,colSpan:3},{content:sub}]],
-      headStyles:{fillColor:[pr,pg,pb],textColor:255,fontStyle:'bold',fontSize:9},
-      footStyles:{fillColor:[pr,pg,pb],textColor:255,fontStyle:'bold',fontSize:8},
-      bodyStyles:{fontSize:8.5,cellPadding:2.5},
-      alternateRowStyles:{fillColor:[244,246,247]},
-      columnStyles:{0:{cellWidth:16,halign:'center'},1:{cellWidth:'auto'},2:{cellWidth:28},3:{cellWidth:14,halign:'center',fontStyle:'bold'}},
-      margin:{left:15,right:15},showFoot:'lastPage',
+      // Encabezado de pasillo en una sola fila compacta
+      head:[
+        [{content:`P${p.num} — ${p.nombre.replace(/^Pasillo \d+ — /,'')} · ${items.length} ítems · ${sub} uds.`,colSpan:5,
+          styles:{fillColor:[pr,pg,pb],textColor:255,fontStyle:'bold',fontSize:8.5,cellPadding:2}}],
+        // Columnas: Nro Pasillo · Código · Descripción · Cant · Cliente
+        [
+          {content:'Pasillo',styles:{halign:'center'}},
+          {content:'Código', styles:{halign:'center'}},
+          'Descripción',
+          {content:'Cant.',styles:{halign:'center'}},
+          'Cliente'
+        ]
+      ],
+      body:items.map(r=>[
+        `P${p.num}`,
+        r.codigo,
+        r.descripcion,
+        r.cantidad,
+        r.cliente||m.suc
+      ]),
+      foot:[[
+        {content:'SUBTOTAL',colSpan:3,styles:{halign:'right'}},
+        {content:sub,styles:{halign:'center'}},
+        ''
+      ]],
+      headStyles:{fillColor:[pr,pg,pb],textColor:255,fontStyle:'bold',fontSize:8},
+      footStyles:{fillColor:[44,62,80],textColor:255,fontStyle:'bold',fontSize:8},
+      bodyStyles:{fontSize:8,cellPadding:1.8},
+      alternateRowStyles:{fillColor:[248,249,250]},
+      columnStyles:{
+        0:{cellWidth:13,halign:'center'},   // Pasillo
+        1:{cellWidth:14,halign:'center'},   // Código
+        2:{cellWidth:'auto'},               // Descripción
+        3:{cellWidth:13,halign:'center',fontStyle:'bold'},  // Cant
+        4:{cellWidth:28}                    // Cliente
+      },
+      margin:{left:10,right:10},
+      showFoot:'lastPage',
+      tableLineColor:[220,220,220],
+      tableLineWidth:0.1,
     });
-    y=doc.lastAutoTable.finalY+6;
-    if(y>265){doc.addPage();y=15;}
+    y=doc.lastAutoTable.finalY+4;
+    if(y>272){doc.addPage();y=12;}
   });
+
+  // Pie de página con número
   const pages=doc.internal.getNumberOfPages();
   for(let i=1;i<=pages;i++){
-    doc.setPage(i);doc.setFontSize(8);doc.setTextColor(150);
-    doc.text(`Página ${i} de ${pages}`,195,290,{align:'right'});
-    doc.text('Red de Compras SAS · Sistema de Picking',15,290);
+    doc.setPage(i);
+    doc.setFontSize(7);doc.setTextColor(160);
+    doc.text(`Pág. ${i}/${pages}`,200,295,{align:'right'});
+    doc.text('Red de Compras SAS · Sistema de Picking',10,295);
   }
   doc.save(`picking_${m.num}.pdf`);
 }
@@ -1044,141 +1007,7 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function showAlert(id,msg,type){const el=document.getElementById(id);if(!el)return;el.innerHTML=msg?`<div class="alert a-${type}">${msg}</div>`:''}
 function showMsg(id,msg,type){const el=document.getElementById(id);if(!el)return;el.innerHTML=msg?`<div class="alert a-${type}" style="margin-top:.5rem">${msg}</div>`:''}
 
-// ══ SISTEMA DE USUARIOS ══
-// Contraseñas guardadas como hash SHA-256 en localStorage
-// Usuarios por defecto: admin/admin123 y operador/picking2024
 
-const USERS_KEY='rdc_users_v1';
-let currentUser=null;
-
-async function sha256(str){
-  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
-function getUsers(){
-  return JSON.parse(localStorage.getItem(USERS_KEY)||'null');
-}
-
-async function initUsers(){
-  if(!getUsers()){
-    // Crear usuarios por defecto si no existen
-    const users=[
-      {username:'admin',   hash:await sha256('admin123'),  role:'admin',   createdAt:new Date().toISOString(), lastLogin:null},
-      {username:'operador',hash:await sha256('picking2024'),role:'operador',createdAt:new Date().toISOString(), lastLogin:null},
-    ];
-    localStorage.setItem(USERS_KEY,JSON.stringify(users));
-  }
-  // Verificar si ya hay sesión activa
-  const sess=sessionStorage.getItem('rdc_session');
-  if(sess){
-    const s=JSON.parse(sess);
-    const users=getUsers();
-    const u=users.find(u=>u.username===s.username);
-    if(u){currentUser=u;showApp();return;}
-  }
-}
-
-async function doLogin(){
-  const username=document.getElementById('loginUser').value.trim();
-  const password=document.getElementById('loginPass').value;
-  const err=document.getElementById('loginErr');
-  if(!username||!password){err.style.display='block';err.textContent='Completá usuario y contraseña';return;}
-  const hash=await sha256(password);
-  const users=getUsers();
-  const u=users.find(u=>u.username===username&&u.hash===hash);
-  if(!u){
-    err.style.display='block';err.textContent='Usuario o contraseña incorrectos';
-    document.getElementById('loginPass').value='';
-    return;
-  }
-  // Login exitoso
-  u.lastLogin=new Date().toISOString();
-  localStorage.setItem(USERS_KEY,JSON.stringify(users));
-  sessionStorage.setItem('rdc_session',JSON.stringify({username:u.username,role:u.role}));
-  currentUser=u;
-  err.style.display='none';
-  showApp();
-}
-
-function showApp(){
-  document.getElementById('loginOverlay').style.display='none';
-  document.getElementById('topUser').textContent=`👤 ${currentUser.username} (${currentUser.role})`;
-  if(currentUser.role==='admin'){
-    document.getElementById('btnUserMgr').style.display='inline-flex';
-  }
-}
-
-function logout(){
-  if(!confirm('¿Cerrar sesión?'))return;
-  sessionStorage.removeItem('rdc_session');
-  currentUser=null;
-  document.getElementById('loginOverlay').style.display='flex';
-  document.getElementById('loginUser').value='';
-  document.getElementById('loginPass').value='';
-  document.getElementById('topUser').textContent='';
-  document.getElementById('btnUserMgr').style.display='none';
-}
-
-// ══ GESTIÓN DE USUARIOS (solo admin) ══
-function openUserMgr(){
-  if(currentUser?.role!=='admin'){alert('Solo administradores pueden gestionar usuarios');return;}
-  renderUserList();
-  document.getElementById('userMgr').classList.add('open');
-}
-function closeUserMgr(){document.getElementById('userMgr').classList.remove('open');}
-
-function renderUserList(){
-  const users=getUsers()||[];
-  document.getElementById('userList').innerHTML=users.map((u,i)=>`
-    <div class="u-row">
-      <div class="u-name">${esc(u.username)}</div>
-      <span class="u-role ${u.role==='admin'?'u-admin':'u-oper'}">${u.role}</span>
-      <div class="u-last">${u.lastLogin?new Date(u.lastLogin).toLocaleDateString('es-AR'):'Nunca'}</div>
-      ${u.username!==currentUser.username
-        ?`<button class="btn btn-g btn-sm" onclick="changePass(${i})" title="Cambiar contraseña">🔑</button>
-           <button class="btn btn-g btn-sm" style="color:#E74C3C;border-color:#E74C3C" onclick="delUser(${i})" title="Eliminar">🗑</button>`
-        :'<div style="width:72px"></div>'}
-    </div>`).join('');
-}
-
-async function addUser(){
-  const u=document.getElementById('nuUser').value.trim();
-  const p=document.getElementById('nuPass').value;
-  const r=document.getElementById('nuRole').value;
-  const msg=document.getElementById('umgrMsg');
-  if(!u||!p){msg.style.color='#922B21';msg.textContent='Completá usuario y contraseña';return;}
-  if(p.length<6){msg.style.color='#922B21';msg.textContent='La contraseña debe tener al menos 6 caracteres';return;}
-  const users=getUsers()||[];
-  if(users.find(x=>x.username===u)){msg.style.color='#922B21';msg.textContent='El usuario ya existe';return;}
-  users.push({username:u,hash:await sha256(p),role:r,createdAt:new Date().toISOString(),lastLogin:null});
-  localStorage.setItem(USERS_KEY,JSON.stringify(users));
-  document.getElementById('nuUser').value='';
-  document.getElementById('nuPass').value='';
-  msg.style.color='#1E8449';msg.textContent=`✅ Usuario "${u}" creado correctamente`;
-  renderUserList();
-}
-
-async function changePass(idx){
-  const p=prompt('Nueva contraseña (mínimo 6 caracteres):');
-  if(!p)return;
-  if(p.length<6){alert('La contraseña debe tener al menos 6 caracteres');return;}
-  const users=getUsers();
-  users[idx].hash=await sha256(p);
-  localStorage.setItem(USERS_KEY,JSON.stringify(users));
-  alert('Contraseña actualizada ✅');
-}
-
-function delUser(idx){
-  const users=getUsers();
-  if(!confirm(`¿Eliminar al usuario "${users[idx].username}"?`))return;
-  users.splice(idx,1);
-  localStorage.setItem(USERS_KEY,JSON.stringify(users));
-  renderUserList();
-}
-
-// Inicializar al cargar
-initUsers();
 
 function nuevoP(){if(!confirm('¿Limpiar todo y empezar un nuevo picking?'))return;clearFile();data=[];document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.getElementById('panel-1').classList.add('active');document.querySelectorAll('.step').forEach((s,i)=>{s.classList.remove('active','done');if(!i)s.classList.add('active');});document.getElementById('topChip').textContent='—';}
 </script>
