@@ -126,9 +126,7 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
 .cliente-chip .cc-pago{display:flex;gap:6px;flex-shrink:0}
 .cliente-chip .cc-monto{width:90px;padding:5px 7px;border:1.5px solid var(--bd);border-radius:6px;font-size:12px;outline:none;font-family:inherit}
 .cliente-chip .cc-monto:focus{border-color:var(--rojo)}
-.cliente-chip .cc-formapago{padding:5px 7px;border:1.5px solid var(--bd);border-radius:6px;font-size:12px;outline:none;font-family:inherit;background:#fff;cursor:pointer}
-.cliente-chip .cc-formapago:focus{border-color:var(--rojo)}
-@media(max-width:640px){.cliente-chip .cc-pago{width:100%;justify-content:space-between}.cliente-chip .cc-monto{flex:1}.cliente-chip .cc-formapago{flex:1}}
+@media(max-width:640px){.cliente-chip .cc-pago{width:100%}.cliente-chip .cc-monto{flex:1}}
 .zona-dropzone{min-height:40px;border:2px dashed transparent;border-radius:8px;transition:all .15s}
 .zona-dropzone.dragover{border-color:var(--rojo);background:var(--rojo-l)}
 .zona-empty{text-align:center;padding:1rem;color:var(--tg);font-size:12px;font-style:italic}
@@ -166,8 +164,7 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
   <button class="step" id="s2" onclick="goStep(2)"><span class="sn">2</span> Reparto</button>
   <button class="step" id="s3" onclick="goStep(3)"><span class="sn">3</span> Pasillos</button>
   <button class="step" id="s4" onclick="goStep(4)"><span class="sn">4</span> Asignar</button>
-  <button class="step" id="s5" onclick="goStep(5)"><span class="sn">5</span> Picking</button>
-  <button class="step" id="s6" onclick="goStep(6)"><span class="sn">6</span> Exportar</button>
+  <button class="step" id="s6" onclick="goStep(6)"><span class="sn">5</span> Exportar</button>
 </div>
 <div class="main">
 
@@ -255,7 +252,7 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
   <div class="nav" style="margin-top:.9rem">
     <button class="btn btn-g" onclick="goStep(3)">← Pasillos</button>
     <button class="btn btn-v" onclick="confirmar()">💾 Confirmar y guardar</button>
-    <button class="btn btn-r" id="btnPicking" onclick="goStep(5)" disabled>Ver picking →</button>
+    <button class="btn btn-r" id="btnPicking" onclick="goStep(6)" disabled>Exportar →</button>
   </div>
 </div>
 
@@ -264,7 +261,7 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
   <div class="metrics" id="met4"></div>
   <div class="toolbar">
     <div class="fld" style="flex:0 0 220px;margin:0">
-      <select id="filtroZona" onchange="renderPickingOutput()" style="padding:8px 11px;border:1.5px solid var(--bd);border-radius:7px;font-size:13px;outline:none;background:#fff;font-family:inherit;width:100%">
+      <select id="filtroZonaPicking" onchange="renderPickingOutput()" style="padding:8px 11px;border:1.5px solid var(--bd);border-radius:7px;font-size:13px;outline:none;background:#fff;font-family:inherit;width:100%">
         <option value="">📋 Picking completo (todos)</option>
       </select>
     </div>
@@ -284,6 +281,16 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
 <!-- ═══ PASO 6: EXPORTAR ═══ -->
 <div class="panel" id="panel-6">
   <div class="metrics" id="met5"></div>
+  <div class="card">
+    <div class="toolbar" style="margin:0">
+      <div class="fld" style="flex:0 0 260px;margin:0">
+        <label>Picking a exportar</label>
+        <select id="filtroZona" onchange="renderExport()" style="padding:8px 11px;border:1.5px solid var(--bd);border-radius:7px;font-size:13px;outline:none;background:#fff;font-family:inherit;width:100%">
+          <option value="">📋 Picking completo (todos)</option>
+        </select>
+      </div>
+    </div>
+  </div>
   <div class="card"><div class="ct">Vista previa</div><div id="prevOut"></div></div>
   <div class="card">
     <div class="ct">Descargar</div>
@@ -293,7 +300,7 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
     </div>
   </div>
   <div class="nav">
-    <button class="btn btn-g" onclick="goStep(5)">← Volver</button>
+    <button class="btn btn-g" onclick="goStep(4)">← Volver a asignar</button>
     <button class="btn btn-g" onclick="goStep(2)">🗺️ Ajustar reparto</button>
     <button class="btn btn-g" onclick="nuevoP()">🔄 Nuevo picking</button>
   </div>
@@ -949,19 +956,21 @@ function goStep(n){
     saveMeta();
   }
   if(n>=3)savePasillos();
-  if(n===5&&data.some(r=>!r.pasillo_num)){
+  if((n===5||n===6)&&data.some(r=>!r.pasillo_num)){
     showMsg('p4msg','🔒 Confirmá la asignación primero.','err');
     goStep(4);return;
   }
 
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+n).classList.add('active');
+  updateTopChip();
+  // Mapeo paso interno -> posición visual en la nav (5 botones: 1,2,3,4,6→5)
+  const visualPos=n===6?5:n;
   document.querySelectorAll('.step').forEach((s,i)=>{
     s.classList.remove('active','done');
-    if(i+1===n)s.classList.add('active');
-    else if(i+1<n)s.classList.add('done');
+    if(i+1===visualPos)s.classList.add('active');
+    else if(i+1<visualPos)s.classList.add('done');
   });
-  updateTopChip();
   if(n===2){
     initReparto();renderClienteAddrList();
     // Solo resetear zonas/rutas si es un picking nuevo (data cambió).
@@ -1191,7 +1200,7 @@ function groupByCliente(items){
 
 function renderPickingOutput(){
   // ── Poblar selector de zonas/choferes ──
-  const sel=document.getElementById('filtroZona');
+  const sel=document.getElementById('filtroZonaPicking');
   const prevVal=sel.value;
   let zonaOpts='<option value="">📋 Picking completo (todos)</option>';
   if(zonasState){
@@ -1306,6 +1315,18 @@ function getDataFiltrada(){
 }
 
 function renderExport(){
+  // ── Poblar selector de zonas/choferes (preserva selección si sigue válida) ──
+  const sel=document.getElementById('filtroZona');
+  const prevVal=sel.value;
+  let zonaOpts='<option value="">📋 Picking completo (todos)</option>';
+  if(zonasState){
+    zonasState.zonas.forEach((z,zi)=>{
+      if(z.clientes.length)zonaOpts+=`<option value="${zi}">🚚 ${esc(z.nombre)} (${z.clientes.length} paradas)</option>`;
+    });
+  }
+  sel.innerHTML=zonaOpts;
+  sel.value=[...sel.options].some(o=>o.value===prevVal)?prevVal:'';
+
   const {data:dataF,zonaNombre}=getDataFiltrada();
   renderMetrics('met5',dataF);
   const m=getMeta();const tot=dataF.reduce((s,r)=>s+r.cantidad,0);
@@ -1792,13 +1813,6 @@ function onMontoChange(zi,pi,val){
   m[cliente].monto=parseFloat(val)||0;
   savePagoMaestro(m);
 }
-function onFormaPagoChange(zi,pi,val){
-  const cliente=zonasState.zonas[zi].clientes[pi].cliente;
-  const m=getPagoMaestro();
-  if(!m[cliente])m[cliente]={};
-  m[cliente].formaPago=val;
-  savePagoMaestro(m);
-}
 function getPagoCliente(cliente){
   const m=getPagoMaestro();
   return m[cliente]||{monto:0,formaPago:'efectivo'};
@@ -1815,11 +1829,6 @@ function clienteChipHtml(p,zi,pi,color){
     <div class="cc-pago">
       <input type="number" class="cc-monto" placeholder="$ Monto" value="${pago.monto||''}"
         min="0" step="0.01" onchange="onMontoChange(${zi},${pi},this.value)">
-      <select class="cc-formapago" onchange="onFormaPagoChange(${zi},${pi},this.value)">
-        <option value="efectivo"${pago.formaPago==='efectivo'?' selected':''}>💵 Efectivo</option>
-        <option value="transferencia"${pago.formaPago==='transferencia'?' selected':''}>🏦 Transferencia</option>
-        <option value="cta_cte"${pago.formaPago==='cta_cte'?' selected':''}>📋 Cta. Cte.</option>
-      </select>
     </div>
   </div>`;
 }
@@ -1845,7 +1854,7 @@ function setupDragDrop(){
     });
     chip.addEventListener('dragend',()=>chip.classList.remove('dragging'));
     // Evitar que clickear/escribir en los campos de pago dispare el drag
-    chip.querySelectorAll('.cc-monto,.cc-formapago').forEach(el=>{
+    chip.querySelectorAll('.cc-monto').forEach(el=>{
       el.addEventListener('mousedown',e=>e.stopPropagation());
       el.addEventListener('click',e=>e.stopPropagation());
     });
