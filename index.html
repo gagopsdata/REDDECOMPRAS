@@ -549,7 +549,11 @@ async function processPDF(f){
     }
 
     // ── Detectar formato: "Informe de Entrega" trae cliente + dirección + monto ──
-    if(/Informe de Entrega/i.test(fullText)&&/Saldo Nota de Venta/i.test(fullText)){
+    // Regex tolerante a espacios/saltos variables que pdf.js puede insertar entre palabras
+    const esInformeEntrega=
+      /Informe\s*de\s*Entrega/i.test(fullText)||
+      (/Saldo\s*Nota\s*de\s*Venta/i.test(fullText)&&/R[ée]mito\s*N[uú]mero/i.test(fullText));
+    if(esInformeEntrega){
       return processPDF_InformeEntrega(f,pdf,allItems,fullText);
     }
 
@@ -627,11 +631,11 @@ async function processPDF(f){
 // ══ PARSER: "Informe de Entrega" — trae cliente, domicilio, productos y Saldo Nota de Venta (monto) ══
 function processPDF_InformeEntrega(f,pdf,allItems,fullText){
   // Metadatos: número de entrega, sucursal, fecha
-  const numMatch=fullText.match(/N[uú]mero de entrega:?\s*([A-Z]{2}\d{6,12})/i);
+  const numMatch=fullText.match(/N[uú]mero\s*de\s*entrega:?\s*([A-Z]{2}\d{6,12})/i);
   if(numMatch)document.getElementById('m-num').value=numMatch[1];
   const sucMatch=fullText.match(/Sucursal:\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ]+?)(?:\s+Tel[eé]fono|$)/im);
   if(sucMatch)document.getElementById('m-suc').value=sucMatch[1].trim();
-  const choMatch=fullText.match(/Flete Propio:?\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ]+?)(?:\s+Volumen|$)/im);
+  const choMatch=fullText.match(/Flete\s*Propio:?\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ]+?)(?:\s+Volumen|$)/im);
   if(choMatch)document.getElementById('m-cho').value=choMatch[1].trim();
   const fecMatch=fullText.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if(fecMatch){
@@ -647,15 +651,15 @@ function processPDF_InformeEntrega(f,pdf,allItems,fullText){
     rowMap[key].items.push(item);
   });
   const sortedRows=Object.values(rowMap).sort((a,b)=>a.page-b.page||a.y-b.y);
-  const allLines=sortedRows.map(r=>r.items.sort((a,b)=>a.x-b.x).map(i=>i.str).join(' ').trim());
+  const allLines=sortedRows.map(r=>r.items.sort((a,b)=>a.x-b.x).map(i=>i.str).join(' ').replace(/\s+/g,' ').trim());
 
   // Limpiar líneas de pie/encabezado que no aportan datos y romperían la asociación cliente↔producto
-  const FOOTER_RE=/^(Observaciones:|Emitido:|Informe de Entrega|Sucursal:|CUIT:|Red de Compras|Flete)/i;
+  const FOOTER_RE=/^(Observaciones:|Emitido:|Informe\s*de\s*Entrega|Sucursal:|CUIT:|Red de Compras|Flete)/i;
   const lines=allLines.filter(l=>l&&!FOOTER_RE.test(l));
 
-  const CLIENTE_RE  =/^Cliente:\s*(.+?)\s+Importe Recibido$/;
-  const DOMICILIO_RE=/^Domicilio:\s*(.+?)\s+Firma$/;
-  const SALDO_RE    =/^R[ée]mito N[uú]mero:.*Saldo Nota de Venta:\s*\$\s*([\d.,]+)\s*$/;
+  const CLIENTE_RE  =/^Cliente:\s*(.+?)\s+Importe\s*Recibido$/i;
+  const DOMICILIO_RE=/^Domicilio:\s*(.+?)\s+Firma$/i;
+  const SALDO_RE    =/^R[ée]mito\s*N[uú]mero:.*Saldo\s*Nota\s*de\s*Venta:\s*\$\s*([\d.,]+)\s*$/i;
   const PRODUCTO_RE =/^(\d+,\d{2})\s+(.+)$/;
 
   const clientes=[];
