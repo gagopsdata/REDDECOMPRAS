@@ -673,10 +673,11 @@ function processPDF_InformeEntrega(f,pdf,allItems,fullText){
   const FOOTER_RE=/^(Observaciones:|Emitido:|Informe\s*de\s*Entrega|Sucursal:|CUIT:|Red de Compras|Flete)/i;
   const lines=allLines.filter(l=>l&&!FOOTER_RE.test(l));
 
-  const CLIENTE_RE  =/^Cliente:\s*(.+?)\s+Importe\s*Recibido$/i;
-  const DOMICILIO_RE=/^Domicilio:\s*(.+?)\s+Firma$/i;
-  const SALDO_RE    =/^R[ée]mito\s*N[uú]mero:.*Saldo\s*Nota\s*de\s*Venta:\s*\$\s*([\d.,]+)\s*$/i;
-  const PRODUCTO_RE =/^(\d+,\d{2})\s+(.+)$/;
+  const CLIENTE_RE     =/^Cliente:\s*(.+?)\s+Importe\s*Recibido$/i;
+  const DOMICILIO_RE   =/^Domicilio:\s*(.+?)\s+Firma$/i;
+  const SALDO_RE       =/^R[ée]mito\s*N[uú]mero:.*Saldo\s*Nota\s*de\s*Venta:\s*\$\s*([\d.,]+)\s*$/i;
+  const SALDO_CTACTE_RE=/^Saldo\s*Cta\.?\s*Cte\.?:\s*\$\s*([\d.,]+)\s*$/i;
+  const PRODUCTO_RE    =/^(\d+,\d{2})\s+(.+)$/;
 
   const clientes=[];
   let current=null;
@@ -687,7 +688,13 @@ function processPDF_InformeEntrega(f,pdf,allItems,fullText){
     let m=l.match(CLIENTE_RE);
     if(m){
       if(current)clientes.push(current);
-      current={cliente:m[1].trim(),domicilio:'',monto:0,productos:[]};
+      current={cliente:m[1].trim(),domicilio:'',monto:0,saldoCtaCte:0,productos:[]};
+      i++;continue;
+    }
+
+    m=l.match(SALDO_CTACTE_RE);
+    if(m&&current){
+      current.saldoCtaCte=parseFloat(m[1].replace(/\./g,'').replace(',','.'));
       i++;continue;
     }
 
@@ -758,6 +765,7 @@ function processPDF_InformeEntrega(f,pdf,allItems,fullText){
     }
     if(!pagoMaestro[c.cliente])pagoMaestro[c.cliente]={};
     pagoMaestro[c.cliente].monto=c.monto;
+    pagoMaestro[c.cliente].saldoCtaCte=c.saldoCtaCte||0;
     if(!pagoMaestro[c.cliente].formaPago)pagoMaestro[c.cliente].formaPago='efectivo';
   });
   saveAddrMaestro(addrMaestro);
@@ -1891,7 +1899,7 @@ function onMontoChange(zi,pi,val){
 }
 function getPagoCliente(cliente){
   const m=getPagoMaestro();
-  return m[cliente]||{monto:0,formaPago:'efectivo'};
+  return m[cliente]||{monto:0,formaPago:'efectivo',saldoCtaCte:0};
 }
 
 function clienteChipHtml(p,zi,pi,color){
@@ -2300,6 +2308,39 @@ function exportRutaPDF(zi){
   y+=8;
   doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(100);
   doc.text(`Salida y regreso: ${deposito.formatted}`,15,y);
+  y+=6;
+
+  // ── CUENTAS CORRIENTES CON SALDO DEUDOR: para que el chofer intente cobrar la deuda ──
+  const deudores=order
+    .map(origIdx=>paradas[origIdx])
+    .map(p=>({cliente:p.cliente,saldo:getPagoCliente(p.cliente).saldoCtaCte||0}))
+    .filter(d=>d.saldo>0);
+
+  if(deudores.length){
+    if(y>265){doc.addPage();y=15;}
+    doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(192,57,43);
+    doc.text('CUENTAS CORRIENTES CON SALDO DEUDOR',15,y);
+    y+=2;
+
+    doc.autoTable({
+      startY:y+2,
+      head:[['Cliente','Saldo Cta. Cte.']],
+      body:deudores.map(d=>[d.cliente,`$${d.saldo.toLocaleString('es-AR',{minimumFractionDigits:2})}`]),
+      headStyles:{fillColor:[192,57,43],textColor:255,fontStyle:'bold',fontSize:8.5},
+      bodyStyles:{fontSize:8.5,cellPadding:2.5},
+      alternateRowStyles:{fillColor:[253,237,236]},
+      columnStyles:{
+        0:{cellWidth:'auto'},
+        1:{cellWidth:35,halign:'right',fontStyle:'bold'}
+      },
+      margin:{left:15,right:15}
+    });
+    y=doc.lastAutoTable.finalY+4;
+
+    const totalDeuda=deudores.reduce((s,d)=>s+d.saldo,0);
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(192,57,43);
+    doc.text(`TOTAL DEUDA A INTENTAR COBRAR: $${totalDeuda.toLocaleString('es-AR',{minimumFractionDigits:2})}`,15,y);
+  }
 
   doc.setFontSize(7);doc.setTextColor(150);
   doc.text('Red de Compras SAS · Sistema de Picking',15,290);
