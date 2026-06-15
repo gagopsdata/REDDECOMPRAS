@@ -99,6 +99,7 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
 .p-section table{width:100%}
 .p-section thead th{font-size:11px;padding:7px 11px}
 .p-section tbody td{padding:7px 11px;font-size:13px}
+.p-section tbody tr.prod-first td{border-top:2px solid var(--bd)}
 .p-section tfoot td{font-size:12px;padding:7px 11px}
 /* EXPORT */
 .dl-grid{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin-top:.9rem}
@@ -140,6 +141,8 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
 .stop-addr{font-size:11px;color:var(--tg);margin-top:1px}
 .stop-meta{font-size:11px;color:var(--tg);text-align:right;min-width:70px}
 .stop-input{flex:1;padding:6px 9px;border:1.5px solid var(--bd);border-radius:6px;font-size:12px;outline:none;font-family:inherit;transition:border-color .15s}
+.stop-coord{font-family:monospace;color:var(--tg)}
+.stop-coord::placeholder{font-family:inherit}
 .stop-input:focus{border-color:var(--rojo)}
 .stop-input.geo-ok{border-color:var(--verde);background:#EAFAF1}
 .stop-input.geo-err{border-color:#E74C3C;background:#FDEDEC}
@@ -350,7 +353,7 @@ const BASE_PASILLOS = [
 const BASE_BY_CODE = {"6": 2, "1745": 3, "2035": 3, "2673": 3, "2680": 3, "292": 2, "107": 3, "108": 3, "1710": 3, "1800": 3, "1823": 3, "550": 3, "677": 3, "683": 3, "702": 3, "723": 3, "2611": 3, "2615": 3, "2818": 3, "2819": 3, "300": 2, "472": 2, "951": 2, "1843": 2, "1975": 2, "2352": 2, "2542": 2, "924": 3, "925": 3, "2021": 1, "2920": 1, "2931": 1, "3163": 1, "3164": 1, "3166": 1, "3168": 1, "975": 3, "3335": 5, "1101": 5, "1440": 7, "2058": 7, "2511": 7, "3242": 7, "3243": 7, "2649": 7, "2655": 7, "1255": 6, "1256": 6, "1257": 6, "1284": 6, "1285": 6, "1286": 6, "407": 4, "805": 4, "809": 4, "1600": 4, "1601": 4, "1641": 4, "1643": 4, "1882": 4, "1902": 4, "2010": 4, "2770": 4, "2592": 4, "2594": 4, "652": 6, "2633": 3, "2267": 6, "3333": 6, "3332": 6, "3317": 6, "3319": 6, "3316": 6, "3315": 6, "2429": 2, "2431": 2, "2967": 2, "2972": 2, "3030": 2};
 
 // Mapeo por DESCRIPCIÓN exacta → número de pasillo
-const BASE_BY_DESC = {"ACEITES DE GIRASOL - ACEITE DE GIRASOL MOLTO 900CC": 2, "KETCHUP - KETCHUP DANICA 220GR": 3, "MAYONESA - MAYONESA DANICA FIESTA 100GR": 3, "OTROS - SALSA BARBACOA DANICA BBQ 220GR": 3, "SALSA GOLF - SALSA GOLF DANICA 220ML": 3, "ARROZ - ARROZ NOBLE 500GR": 2, "AGUA SIN GAS - AGUA MINERAL SAN MIGUEL 6.5LT": 3, "AGUA SIN GAS - AGUA MINERAL SAN MIGUEL 600ML": 3, "JUGO EN POLVO CLIGHT NARANJA 8GR": 3, "LECHE CHOCOLATADA ILOLAY 200ML": 3, "LECHE LARGA VIDA ILOLAY ENTERA 1LT": 3, "CALDOS - CALDO MOLTO SABOR GALLINA 12 CUBITOS": 3, "ESPECIAS PURAS - CONDIMENTO CEBOLLA DESHIDRATADA ALICANTE 50GR": 3, "ESPECIAS PURAS - CONDIMENTO LAUREL EN HOJAS ALICANTE 10GR": 3, "ESPECIAS PURAS - CONDIMENTO OREGANO ALICANTE 25GR": 3, "ESPECIAS PURAS - CONDIMENTO TOMILLO ALICANTE 10GR": 3, "MEZCLA DE ESPECIAS - SABORIZADOR EN POLVO ALICANTE ALBAHACA Y AJO 7.5GR": 3, "MEZCLA DE ESPECIAS - SABORIZADOR EN POLVO ALICANTE FINAS HIERBAS 7.5GR": 3, "SOPA - SOPA ALICANTE ARROZ CON POLLO 63GR": 3, "SOPA - SOPA ALICANTE CAMPESTRE FIDEOS Y VEGETALES 68GR": 3, "CONSERVAS DE LEGUMBRES - ARVEJAS MAROLIO 340GR": 2, "LEGUMBRES - BURGOL LA ESPAÑOLA 500GR": 2, "CONSERVAS DE FRUTAS - DURAZNOS MAROLIO EN MITADES 820GR": 2, "LEGUMBRES - LENTEJAS LA ESPAÑOLA 400GR": 2, "LEGUMBRES - MAIZ PISINGALLO LA ESPAÑOLA 500GR": 2, "POLENTA - POLENTA LA ESPAÑOLA TRADICIONAL 400GR": 2, "REBOZADOR MAROLIO 500GR": 2, "DULCE DE LECHE ILOLAY CLASICO 200GR": 3, "DULCE DE LECHE ILOLAY CLASICO 400GR": 3, "MATE COCIDO - MATE COCIDO LITORAL 25 SAQUITOS SIN SOBRE": 1, "TE CLASICO LA VIRGINIA 50 SAQUITOS": 1, "TE GREEN HILLS 25 SAQUITOS": 1, "COMPUESTAS - YERBA VERDEFLOR HIERBAS SERRANAS 250GR": 1, "COMPUESTAS - YERBA VERDEFLOR HIERBAS SERRANAS 500GR": 1, "COMPUESTAS - YERBA VERDEFLOR MANZANILLA 500GR": 1, "COMPUESTAS - YERBA VERDEFLOR MENTA 500GR": 1, "EDULCORANTE LIQUIDO - EDULCORANTE LIQUIDO SI DIET CLASICO 250ML": 3, "FIDEOS GUISEROS - FIDEOS MAROLIO CARACOLES 500GR": 5, "FIDEOS LARGOS - FIDEOS MAROLIO SPAGHETTI 500GR": 5, "HAMBURGUESAS PATY FINITAS 2UN": 7, "MEDALLON DE CARNE PATY EXPRESS 4UN": 7, "QUESO UNTABLE PATAGONIA ORIGINAL 180GR": 7, "QUESO UNTABLE TREMBLAY CLASICO 180GR": 7, "QUESO UNTABLE TREMBLAY POR SALUT 180GR": 7, "SALCHICHAS 66 6UN": 7, "SALCHICHAS PANCHIN 6UN": 7, "DULCES - GALLETAS POLVORITAS SABOR CHOCOLATE 81GR": 6, "DULCES - GALLETAS POLVORITAS SABOR FRUTILLA 81GR": 6, "DULCES - GALLETAS POLVORITAS SABOR VAINILLA 81GR": 6, "DULCES - GALLETAS VAINILLA MAURI 80GR": 6, "DULCES - GALLETAS VOCACION ACARAMELADAS 145GR": 6, "DULCES - GALLETAS VOCACION CLASICAS 141GR": 6, "BOLSAS - BOLSAS DE CONSORCIO EL HOMBRE DE LA BOLSA 60X90CM 10UN": 4, "DESINFECTANTES - DESINFECTANTE LYSOFORM ORIGINAL 285ML": 4, "DESINFECTANTE MULTIMAX LAVANDINA EN POLVO 8GR RINDE 1LT": 4, "JABON LIQUIDO - JABON LIQUIDO MULTIMAX PARA DILUIR CON SUAVIZANTE RINDE 800ML": 4, "JABON LIQUIDO - JABON LIQUIDO MULTIMAX PARA DILUIR RINDE 800ML": 4, "JABON ST TROPEZ ARMONIA PARA VOS PACK 3 X 125GR": 4, "JABON ST TROPEZ BRILLO Y LUZ PACK 3 X 125GR": 4, "LIMPIADORES - LIMPIADOR BAÑO MULTIMAX RINDE 500ML": 4, "PISOS - LIMPIADOR MULTIMAX MULTIUSO PINO RINDE 5LT": 4, "MAQUINAS DE AFEITAR - MAQUINA DE AFEITAR MINORA II": 4, "SHAMPOO - SHAMPOO PANTENE RESTAURACION 10ML": 4, "ROLLO DE COCINA - ROLLO DE COCINA ELEGANTE 3UN X 50 PAÑOS": 4, "ROLLO DE COCINA - ROLLO DE COCINA ELEGANTE GIGANTE 200 PAÑOS": 4, "CHOCOLATE HAMLET CHOCOLATOSO 43GR": 6, "SAL - SAL CELUSAL FINA 500GR": 3, "PAPAS - PAPAS FRITAS MAROLIO ORIGINAL 130GR": 6, "PAPAS - PAPAS FRITAS MAROLIO SABOR BARBACOA 130GR": 6, "PAPAS - PAPAS FRITAS MAROLIO SABOR CREMA Y CEBOLLA 130GR": 6, "SNACKS CRAZY SNACK CONITOS 1KG": 6, "SNACKS CRAZY SNACK NACHOS 1 KG": 6, "SNACKS CRAZY SNACKS ARITOS SABOR CEBOLLA 1 KG": 6, "SNACKS CRAZY SNACKS CONITOS 50GR": 6, "PURE DE TOMATE - PURE DE TOMATE MAROLIO 200GR": 2, "PURE DE TOMATE - PURE DE TOMATE MAROLIO 520GR": 2, "TOMATES ENTEROS Y TRITURADOS - TOMATE TRITURADO MAROLIO 500GR": 2, "TOMATES ENTEROS Y TRITURADOS - TOMATES PERITAS MAROLIO 400GRS": 2, "VINAGRES - VINAGRE DE ALCOHOL MAROLIO 1LT": 2, "MEZCLA DE ESPECIAS - SABORIZADOR EN POLVO ALICANTE FINAS HIERBAS": 3, "JABON LIQUIDO - JABON LIQUIDO MULTIMAX PARA DILUIR CON SUAVIZANTE": 4};
+const BASE_BY_DESC = {"ACEITES DE GIRASOL - ACEITE DE GIRASOL MOLTO 900CC": 2, "KETCHUP - KETCHUP DANICA 220GR": 3, "MAYONESA - MAYONESA DANICA FIESTA 100GR": 3, "OTROS - SALSA BARBACOA DANICA BBQ 220GR": 3, "SALSA GOLF - SALSA GOLF DANICA 220ML": 3, "ARROZ - ARROZ NOBLE 500GR": 2, "AGUA SIN GAS - AGUA MINERAL SAN MIGUEL 6.5LT": 3, "AGUA SIN GAS - AGUA MINERAL SAN MIGUEL 600ML": 3, "JUGO EN POLVO CLIGHT NARANJA 8GR": 3, "LECHE CHOCOLATADA ILOLAY 200ML": 3, "LECHE LARGA VIDA ILOLAY ENTERA 1LT": 3, "CALDOS - CALDO MOLTO SABOR GALLINA 12 CUBITOS": 3, "ESPECIAS PURAS - CONDIMENTO CEBOLLA DESHIDRATADA ALICANTE 50GR": 3, "ESPECIAS PURAS - CONDIMENTO LAUREL EN HOJAS ALICANTE 10GR": 3, "ESPECIAS PURAS - CONDIMENTO OREGANO ALICANTE 25GR": 3, "ESPECIAS PURAS - CONDIMENTO TOMILLO ALICANTE 10GR": 3, "MEZCLA DE ESPECIAS - SABORIZADOR EN POLVO ALICANTE ALBAHACA Y AJO 7.5GR": 3, "MEZCLA DE ESPECIAS - SABORIZADOR EN POLVO ALICANTE FINAS HIERBAS 7.5GR": 3, "SOPA - SOPA ALICANTE ARROZ CON POLLO 63GR": 3, "SOPA - SOPA ALICANTE CAMPESTRE FIDEOS Y VEGETALES 68GR": 3, "CONSERVAS DE LEGUMBRES - ARVEJAS MAROLIO 340GR": 2, "LEGUMBRES - BURGOL LA ESPAÑOLA 500GR": 2, "CONSERVAS DE FRUTAS - DURAZNOS MAROLIO EN MITADES 820GR": 2, "LEGUMBRES - LENTEJAS LA ESPAÑOLA 400GR": 2, "LEGUMBRES - MAIZ PISINGALLO LA ESPAÑOLA 500GR": 2, "POLENTA - POLENTA LA ESPAÑOLA TRADICIONAL 400GR": 2, "REBOZADOR MAROLIO 500GR": 2, "DULCE DE LECHE ILOLAY CLASICO 200GR": 3, "DULCE DE LECHE ILOLAY CLASICO 400GR": 3, "MATE COCIDO - MATE COCIDO LITORAL 25 SAQUITOS SIN SOBRE": 1, "TE CLASICO LA VIRGINIA 50 SAQUITOS": 1, "TE GREEN HILLS 25 SAQUITOS": 1, "COMPUESTAS - YERBA VERDEFLOR HIERBAS SERRANAS 250GR": 1, "COMPUESTAS - YERBA VERDEFLOR HIERBAS SERRANAS 500GR": 1, "COMPUESTAS - YERBA VERDEFLOR MANZANILLA 500GR": 1, "COMPUESTAS - YERBA VERDEFLOR MENTA 500GR": 1, "EDULCORANTE LIQUIDO - EDULCORANTE LIQUIDO SI DIET CLASICO 250ML": 3, "FIDEOS GUISEROS - FIDEOS MAROLIO CARACOLES 500GR": 5, "FIDEOS LARGOS - FIDEOS MAROLIO SPAGHETTI 500GR": 5, "HAMBURGUESAS PATY FINITAS 2UN": 7, "MEDALLON DE CARNE PATY EXPRESS 4UN": 7, "QUESO UNTABLE PATAGONIA ORIGINAL 180GR": 7, "QUESO UNTABLE TREMBLAY CLASICO 180GR": 7, "QUESO UNTABLE TREMBLAY POR SALUT 180GR": 7, "SALCHICHAS 66 6UN": 7, "SALCHICHAS PANCHIN 6UN": 7, "DULCES - GALLETAS POLVORITAS SABOR CHOCOLATE 81GR": 6, "DULCES - GALLETAS POLVORITAS SABOR FRUTILLA 81GR": 6, "DULCES - GALLETAS POLVORITAS SABOR VAINILLA 81GR": 6, "DULCES - GALLETAS VAINILLA MAURI 80GR": 6, "DULCES - GALLETAS VOCACION ACARAMELADAS 145GR": 6, "DULCES - GALLETAS VOCACION CLASICAS 141GR": 6, "BOLSAS - BOLSAS DE CONSORCIO EL HOMBRE DE LA BOLSA 60X90CM 10UN": 4, "DESINFECTANTES - DESINFECTANTE LYSOFORM ORIGINAL 285ML": 4, "DESINFECTANTE MULTIMAX LAVANDINA EN POLVO 8GR RINDE 1LT": 4, "JABON LIQUIDO - JABON LIQUIDO MULTIMAX PARA DILUIR CON SUAVIZANTE RINDE 800ML": 4, "JABON LIQUIDO - JABON LIQUIDO MULTIMAX PARA DILUIR RINDE 800ML": 4, "JABON ST TROPEZ ARMONIA PARA VOS PACK 3 X 125GR": 4, "JABON ST TROPEZ BRILLO Y LUZ PACK 3 X 125GR": 4, "LIMPIADORES - LIMPIADOR BAÑO MULTIMAX RINDE 500ML": 4, "PISOS - LIMPIADOR MULTIMAX MULTIUSO PINO RINDE 5LT": 4, "MAQUINAS DE AFEITAR - MAQUINA DE AFEITAR MINORA II": 4, "SHAMPOO - SHAMPOO PANTENE RESTAURACION 10ML": 4, "ROLLO DE COCINA - ROLLO DE COCINA ELEGANTE 3UN X 50 PAÑOS": 4, "ROLLO DE COCINA - ROLLO DE COCINA ELEGANTE GIGANTE 200 PAÑOS": 4, "CHOCOLATE HAMLET CHOCOLATOSO 43GR": 6, "SAL - SAL CELUSAL FINA 500GR": 3, "PAPAS - PAPAS FRITAS MAROLIO ORIGINAL 130GR": 6, "PAPAS - PAPAS FRITAS MAROLIO SABOR BARBACOA 130GR": 6, "PAPAS - PAPAS FRITAS MAROLIO SABOR CREMA Y CEBOLLA 130GR": 6, "SNACKS CRAZY SNACK CONITOS 1KG": 6, "SNACKS CRAZY SNACK NACHOS 1 KG": 6, "SNACKS CRAZY SNACKS ARITOS SABOR CEBOLLA 1 KG": 6, "SNACKS CRAZY SNACKS CONITOS 50GR": 6, "PURE DE TOMATE - PURE DE TOMATE MAROLIO 200GR": 2, "PURE DE TOMATE - PURE DE TOMATE MAROLIO 520GR": 2, "TOMATES ENTEROS Y TRITURADOS - TOMATE TRITURADO MAROLIO 500GR": 2, "TOMATES ENTEROS Y TRITURADOS - TOMATES PERITAS MAROLIO 400GRS": 2, "VINAGRES - VINAGRE DE ALCOHOL MAROLIO 1LT": 2, "MEZCLA DE ESPECIAS - SABORIZADOR EN POLVO ALICANTE FINAS HIERBAS": 3, "JABON LIQUIDO - JABON LIQUIDO MULTIMAX PARA DILUIR CON SUAVIZANTE": 4, "CAFE TORRADO LA VIRGINIA MOLIDO 125GR": 1, "MATE COCIDO LA TRANQUERA 25 SAQUITOS": 1, "DULCE DE LECHE TREMBLAY TRADICIONAL 250GR": 1, "MERMELADA MAROLIO DURAZNO 454GR": 1, "CAFE INSTANTANEO LA VIRGINIA CLASICO 36 SOBRES": 1, "CAFE INSTANTANEO LA VIRGINIA CLASICO PACK AHORRO 100GR": 1, "ACEITE DE GIRASOL MOLTO 900CC": 2, "BICARBONATO VILLA RICA 20GR": 2, "ARVEJAS MAROLIO 340GR": 2, "PURE DE TOMATE MAROLIO 520GR": 3, "PICADILLO MAROLIO 90GR": 2, "CONDIMENTO PIMENTON DULCE ALICANTE 25GR": 3, "BOLSAS DE CONSORCIO EL HOMBRE DE LA BOLSA 60X90CM 10UN": 4, "BOLSAS DE CONSORCIO EL HOMBRE DE LA BOLSA 90X120CM 10UN": 4, "BOLSAS DE RESIDUOS ESENCIAL 45X60CM 10UN": 4, "DETERGENTE MAGISTRAL ULTRA LIMON 225ML": 4, "HISOPOS ESTRELLA 125 UN": 4, "JABON EN PAN ARGENTINO BLANCURA EXTREMA 150GR": 4, "JABON LIQUIDO BORITA TOQUE DE SUAVIZANTE 800ML": 4, "PAÑAL HUGGIES CLASSIC - XG 8 UN": 4, "PAPEL HIGIENICO ELEGANTE 4UN X 30 METROS": 4, "ROLLO DE COCINA ELEGANTE 3UN X 50 PAÑOS": 4, "PAPEL HIGIENICO ELEGANTE ALOE VERA 24UN X 30 METROS": 4, "DESINFECTANTE LYSOFORM ORIGINAL 285ML": 4, "ESPONJA INOXIDABLE DEA ACERO 1UN": 4, "ARROZ NOBLE 500GR": 5, "FIDEOS SANTA ISABEL SPAGHETTI 500GR": 5, "ALFAJOR FULBITO MANI 30GR": 6, "CHOCOLATE BLANCO MISKI 25GR": 6, "CHOCOLATE NEGRO MISKI 25GR": 6, "ALFAJOR GENIO TRIPLE BLANCO 60GR": 6, "ALFAJOR GENIO TRIPLE NEGRO 60GR": 6, "GALLETAS FRUTIGRAN AVENA Y PASAS 250GR": 6, "GALLETAS FRUTIGRAN CHIPS DE CHOCOLATES 255G": 6, "OBLEA RELLENA OBLITA SABOR FRUTILLA 50GR": 6, "OBLEA RELLENA OBLITA SABOR VAINILLA 50GR": 6, "TORTILLAS BIMBO RAPIDITAS CLASICAS 8UN": 7, "FIAMBRE COCIDO CHACINADOS 73 ETIQUETA AZUL X KG": 7, "QUESO CREMOSO NUEVA VILLA X KG": 7, "QUESO TYBO NUEVA VILLA X KG": 7, "LEVADURA SECA MI PAN SOBRE 10GR": 7, "MANTECA TONADITA 100GR": 7, "CONDIMENTO COMINO MOLIDO ALICANTE 25GR": 3, "SALAME MILAN CHACINADOS 73 X KG": 7, "SALAME MILAN PIAMONTESA X KG": 7};
 
 // ══ ESTADO ══
 let wb=null,sheetNames=[],rawHeaders=[],rawRows=[];
@@ -1097,6 +1100,42 @@ function getOrdenClientes(){
   return any?map:null;
 }
 
+// ══ Agrupar por PRODUCTO: cada producto aparece una vez, con una fila por cliente que lo pidió ══
+function groupByProducto(items){
+  const groups={};
+  items.forEach(r=>{
+    const key=r.descripcion;
+    if(!groups[key])groups[key]=[];
+    groups[key].push(r);
+  });
+
+  const ordenMap=getOrdenClientes();
+  const zonaOrder={};
+  if(zonasState)zonasState.zonas.forEach((z,i)=>{zonaOrder[z.nombre]=i;});
+
+  function sortClientesDeProducto(rows){
+    return rows.slice().sort((a,b)=>{
+      const oa=ordenMap?.[a.cliente], ob=ordenMap?.[b.cliente];
+      if(oa&&ob){
+        const za=zonaOrder[oa.zonaNombre]??99, zb=zonaOrder[ob.zonaNombre]??99;
+        if(za!==zb)return za-zb;
+        if(oa.paradaNum!==ob.paradaNum)return oa.paradaNum-ob.paradaNum;
+      }else if(oa&&!ob)return -1;
+      else if(!oa&&ob)return 1;
+      return (a.cliente||'').localeCompare(b.cliente||'','es');
+    });
+  }
+
+  return Object.keys(groups)
+    .sort((a,b)=>a.localeCompare(b,'es'))
+    .map(desc=>({
+      descripcion:desc,
+      codigo:groups[desc][0].codigo,
+      rows:sortClientesDeProducto(groups[desc]),
+      totalCantidad:groups[desc].reduce((s,r)=>s+r.cantidad,0)
+    }));
+}
+
 function groupByCliente(items){
   const groups={};
   items.forEach(r=>{
@@ -1174,42 +1213,40 @@ function renderPickingOutput(){
   pUsados.forEach(p=>{
     const items=dataFiltrada.filter(r=>r.pasillo_num===p.num);
     const sub=items.reduce((s,r)=>s+r.cantidad,0);
-    const grupos=groupByCliente(items);
+    const grupos=groupByProducto(items);
+    const nClientes=new Set(items.map(r=>r.cliente||'—')).size;
 
     let bodyHtml='';
+    let rowCounter=0;
     grupos.forEach(g=>{
-      // Sub-encabezado de cliente: parada + chofer si hay zonas calculadas
-      let badges='';
-      if(g.paradaNum){
-        badges+=`<span style="background:${g.zonaColor||p.color};color:#fff;border-radius:20px;padding:1px 8px;font-size:11px;font-weight:700;margin-right:6px">🚚 ${esc(g.zonaNombre)} · Parada ${g.paradaNum}</span>`;
-      }
-      bodyHtml+=`<tr>
-        <td colspan="5" style="background:${p.color}10;color:${p.color};font-weight:700;font-size:12px;padding:5px 11px;border-top:1px solid ${p.color}33">
-          ${badges}👤 ${esc(g.cliente)} <span style="font-weight:400;opacity:.75">— ${g.items.length} ítem${g.items.length!==1?'s':''}</span>
-        </td>
-      </tr>`;
-      bodyHtml+=g.items.map((r,ri)=>{
-        const rid=`c${p.num}_${esc(g.cliente).replace(/\W/g,'')}_${ri}`;
-        return`<tr id="row_${rid}">
+      g.rows.forEach((r,ri)=>{
+        const rid=`c${p.num}_${rowCounter++}`;
+        // Badge de parada/zona solo si hay ruta calculada
+        const ord=getOrdenClientes()?.[r.cliente];
+        const badge=ord
+          ?`<span style="background:${ord.zonaColor||p.color};color:#fff;border-radius:20px;padding:0 6px;font-size:10px;font-weight:700;margin-left:5px">🚚 P${ord.paradaNum}</span>`
+          :'';
+        const esPrimera=ri===0;
+        bodyHtml+=`<tr id="row_${rid}" class="${esPrimera?'prod-first':''}">
           <td style="text-align:center"><input type="checkbox" id="${rid}" style="width:16px;height:16px;cursor:pointer;accent-color:${p.color}" onchange="tick('${rid}')"></td>
-          <td style="font-size:12px;color:var(--tg)">${esc(r.codigo)}</td>
-          <td>${esc(r.descripcion)}</td>
-          <td style="font-size:12px;color:var(--tg)">${esc(r.cliente||'—')}</td>
+          <td style="font-size:12px;color:var(--tg)">${esPrimera?esc(r.codigo):''}</td>
+          <td>${esPrimera?esc(g.descripcion):''}</td>
+          <td style="font-size:12px;color:var(--tg)">👤 ${esc(r.cliente||'—')}${badge}</td>
           <td style="text-align:center;font-weight:700;font-size:14px">${r.cantidad}</td>
         </tr>`;
-      }).join('');
+      });
     });
 
     html+=`<div class="p-section">
       <div class="p-hdr" style="background:${p.color}">
         <span>📦 ${esc(p.nombre)}</span>
-        <span class="ph-r">${items.length} ítem${items.length!==1?'s':''} · ${sub} uds. · ${grupos.length} cliente${grupos.length!==1?'s':''}</span>
+        <span class="ph-r">${grupos.length} producto${grupos.length!==1?'s':''} · ${sub} uds. · ${nClientes} cliente${nClientes!==1?'s':''}</span>
       </div>
       <table><thead><tr>
         <th style="width:34px;text-align:center">✓</th>
         <th style="width:70px">Código</th>
         <th>Descripción</th>
-        <th style="width:110px">Cliente</th>
+        <th style="width:160px">Cliente</th>
         <th style="width:75px;text-align:center">Cant.</th>
       </tr></thead><tbody>
       ${bodyHtml}
@@ -1269,25 +1306,26 @@ function renderExport(){
   pUsados.forEach(p=>{
     const items=dataF.filter(r=>r.pasillo_num===p.num);
     const sub=items.reduce((s,r)=>s+r.cantidad,0);
-    const grupos=groupByCliente(items);
+    const grupos=groupByProducto(items);
     html+=`<div style="background:${p.color}18;border-left:4px solid ${p.color};padding:7px 14px;font-weight:700;font-size:13px;color:${p.color}">
       📦 ${esc(p.nombre)} — ${items.length} ítems · ${sub} uds.</div>
     <table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead><tr style="background:${p.color}">
         <th style="padding:5px 10px;color:#fff;width:70px;text-align:center">Código</th>
         <th style="padding:5px 10px;color:#fff">Descripción</th>
-        <th style="padding:5px 10px;color:#fff;width:100px">Cliente</th>
+        <th style="padding:5px 10px;color:#fff;width:120px">Cliente</th>
         <th style="padding:5px 10px;color:#fff;width:65px;text-align:center">Cant.</th>
       </tr></thead><tbody>
-      ${grupos.map(g=>`
-        <tr><td colspan="4" style="padding:4px 10px;background:${p.color}10;color:${p.color};font-weight:700;font-size:11px">👤 ${esc(g.cliente)}${g.paradaNum?` <span style="opacity:.7">— Parada ${g.paradaNum}</span>`:''}</td></tr>
-        ${g.items.map((r,i)=>`<tr style="background:${i%2?'#fff':p.color+'0d'}">
-          <td style="padding:6px 10px;text-align:center;color:var(--tg)">${esc(r.codigo)}</td>
-          <td style="padding:6px 10px">${esc(r.descripcion)}</td>
-          <td style="padding:6px 10px;font-size:11px;color:var(--tg)">${esc(r.cliente||'—')}</td>
+      ${grupos.map(g=>g.rows.map((r,i)=>{
+        const ord=getOrdenClientes()?.[r.cliente];
+        const paradaTxt=ord?` <span style="opacity:.65">(Parada ${ord.paradaNum})</span>`:'';
+        return`<tr style="background:${i%2?'#fff':p.color+'0d'}">
+          <td style="padding:6px 10px;text-align:center;color:var(--tg)">${i===0?esc(r.codigo):''}</td>
+          <td style="padding:6px 10px${i===0?';font-weight:600':''}">${i===0?esc(g.descripcion):''}</td>
+          <td style="padding:6px 10px;font-size:11px;color:var(--tg)">👤 ${esc(r.cliente||'—')}${paradaTxt}</td>
           <td style="padding:6px 10px;text-align:center;font-weight:700">${r.cantidad}</td>
-        </tr>`).join('')}
-      `).join('')}</tbody></table>`;
+        </tr>`;
+      }).join('')).join('')}</tbody></table>`;
   });
   html+=`<div style="background:var(--azul);color:#fff;padding:8px 14px;font-weight:700;font-size:13px;display:flex;justify-content:space-between">
     <span>TOTAL — ${dataF.length} productos</span><span>${tot} uds.</span></div></div>`;
@@ -1358,7 +1396,7 @@ function exportPDF(){
   sortedPasillos().filter(p=>dataF.some(r=>r.pasillo_num===p.num)).forEach(p=>{
     const items=dataF.filter(r=>r.pasillo_num===p.num);
     const sub=items.reduce((s,r)=>s+r.cantidad,0);
-    const grupos=groupByCliente(items);
+    const grupos=groupByProducto(items);
     const hex=p.color.replace('#','');
     const pr=parseInt(hex.slice(0,2),16),pg=parseInt(hex.slice(2,4),16),pb=parseInt(hex.slice(4,6),16);
 
@@ -1366,46 +1404,55 @@ function exportPDF(){
     doc.setFillColor(pr,pg,pb);
     doc.rect(10,y,190,6,'F');
     doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(255,255,255);
-    doc.text(`P${p.num} — ${p.nombre.replace(/^Pasillo \d+ — /,'')}  ·  ${items.length} ítems · ${sub} uds.`,13,y+4.2);
+    doc.text(`P${p.num} — ${p.nombre.replace(/^Pasillo \d+ — /,'')}  ·  ${grupos.length} prod. · ${sub} uds.`,13,y+4.2);
     y+=7;
 
+    // Armar body: una fila por (producto, cliente). Código/descripción solo en la primera fila del grupo.
+    const body=[];
+    const firstRowsOfGroup=new Set(); // índices de body que son "primera fila" de su producto
     grupos.forEach(g=>{
-      if(y>278){doc.addPage();y=12;}
-      // Sub-encabezado de cliente (liviano) + parada si hay ruta
-      doc.setFont('helvetica','bold');doc.setFontSize(7.5);
-      doc.setTextColor(pr,pg,pb);
-      const paradaTxt=g.paradaNum?` — Parada ${g.paradaNum}`:'';
-      doc.text(`👤 ${g.cliente}${paradaTxt}`,13,y+3);
-      y+=4.5;
-
-      doc.autoTable({
-        startY:y,
-        head:false,
-        body:g.items.map(r=>[
-          `P${p.num}`,
-          r.codigo,
-          r.descripcion,
+      g.rows.forEach((r,ri)=>{
+        if(ri===0)firstRowsOfGroup.add(body.length);
+        const ord=getOrdenClientes()?.[r.cliente];
+        const clienteTxt=`${r.cliente||m.suc}${ord?` (P${ord.paradaNum})`:''}`;
+        body.push([
+          ri===0?`P${p.num}`:'',
+          ri===0?r.codigo:'',
+          ri===0?g.descripcion:'',
           r.cantidad,
-          r.cliente||m.suc
-        ]),
-        showHead:false,
-        showFoot:false,
-        bodyStyles:{fontSize:8,cellPadding:1.8},
-        alternateRowStyles:{fillColor:[248,249,250]},
-        columnStyles:{
-          0:{cellWidth:13,halign:'center'},
-          1:{cellWidth:14,halign:'center'},
-          2:{cellWidth:'auto'},
-          3:{cellWidth:13,halign:'center',fontStyle:'bold'},
-          4:{cellWidth:28}
-        },
-        margin:{left:10,right:10},
-        tableLineColor:[220,220,220],
-        tableLineWidth:0.1,
+          clienteTxt
+        ]);
       });
-      y=doc.lastAutoTable.finalY+2;
-      if(y>278){doc.addPage();y=12;}
     });
+
+    doc.autoTable({
+      startY:y,
+      head:false,
+      body,
+      showHead:false,
+      showFoot:false,
+      bodyStyles:{fontSize:8,cellPadding:1.8},
+      alternateRowStyles:{fillColor:[248,249,250]},
+      columnStyles:{
+        0:{cellWidth:13,halign:'center'},
+        1:{cellWidth:14,halign:'center'},
+        2:{cellWidth:'auto'},
+        3:{cellWidth:13,halign:'center',fontStyle:'bold'},
+        4:{cellWidth:32}
+      },
+      didParseCell:(d)=>{
+        // Línea superior más marcada cuando empieza un nuevo producto
+        if(d.section==='body'&&firstRowsOfGroup.has(d.row.index)&&d.row.index>0){
+          d.cell.styles.lineWidth={top:0.5,right:0.1,bottom:0.1,left:0.1};
+          d.cell.styles.lineColor=[180,180,180];
+        }
+      },
+      margin:{left:10,right:10},
+      tableLineColor:[220,220,220],
+      tableLineWidth:0.1,
+    });
+    y=doc.lastAutoTable.finalY+4;
+    if(y>278){doc.addPage();y=12;}
   });
 
   // Pie de página con número
@@ -1444,8 +1491,12 @@ function initReparto(){
   };
 }
 
+function getCoordManualMaestro(){return JSON.parse(localStorage.getItem('rdc_coords_manual')||'{}')}
+function saveCoordManualMaestro(m){localStorage.setItem('rdc_coords_manual',JSON.stringify(m))}
+
 function renderClienteAddrList(){
   const addrMaestro=getAddrMaestro();
+  const coordManual=getCoordManualMaestro();
   // Clientes únicos del pedido actual
   const clientes=[...new Set(data.map(r=>r.cliente||getMeta().suc).filter(Boolean))];
 
@@ -1456,7 +1507,8 @@ function renderClienteAddrList(){
 
   document.getElementById('clienteAddrList').innerHTML=clientes.map((cl,i)=>{
     const saved=addrMaestro[cl]||'';
-    return`<div class="stop-row">
+    const coord=coordManual[cl]||'';
+    return`<div class="stop-row" style="flex-wrap:wrap">
       <div class="stop-num">${i+1}</div>
       <div class="stop-info" style="flex:0 0 140px">
         <div class="stop-cliente">${esc(cl)}</div>
@@ -1464,7 +1516,11 @@ function renderClienteAddrList(){
       <input type="text" class="stop-input" id="addr_${i}" value="${esc(saved)}"
         placeholder="Dirección completa (calle, número, ciudad)"
         data-cliente="${esc(cl)}"
-        onchange="onAddrChange(${i},this)">
+        onchange="onAddrChange(${i},this)" style="flex:2;min-width:180px">
+      <input type="text" class="stop-input stop-coord" id="coord_${i}" value="${esc(coord)}"
+        placeholder="Coordenadas (lat,lng) — opcional"
+        data-cliente="${esc(cl)}" title="Si la dirección no se encuentra en el mapa, pegá aquí las coordenadas de Google Maps (clic derecho → '¿Qué hay aquí?')"
+        onchange="onCoordChange(${i},this)" style="flex:1;min-width:160px;font-size:11px">
     </div>`;
   }).join('');
 }
@@ -1479,12 +1535,55 @@ function onAddrChange(i,input){
   const cm=getCoordMaestro();delete cm[cl];saveCoordMaestro(cm);
 }
 
+// Parsea texto "lat,lng" o "lat, lng" → {lat,lng} o null si no es válido
+function parseLatLng(str){
+  if(!str)return null;
+  const m=String(str).trim().match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+  if(!m)return null;
+  const lat=parseFloat(m[1]),lng=parseFloat(m[2]);
+  if(lat<-90||lat>90||lng<-180||lng>180)return null;
+  return{lat,lng};
+}
+
+function onCoordChange(i,input){
+  const cl=input.dataset.cliente;
+  const val=input.value.trim();
+  const m=getCoordManualMaestro();
+  if(!val){
+    delete m[cl];
+  }else if(parseLatLng(val)){
+    m[cl]=val;
+    input.classList.remove('geo-err');
+    input.classList.add('geo-ok');
+  }else{
+    input.classList.add('geo-err');
+    showMsg('zonasMsg','⚠️ Formato de coordenadas inválido. Usá: latitud,longitud (ej: -26.7833,-65.2167)','warn');
+    return;
+  }
+  saveCoordManualMaestro(m);
+  // invalidar coordenada cacheada — se recalculará usando la manual
+  const cm=getCoordMaestro();delete cm[cl];saveCoordMaestro(cm);
+}
+
 // ══ GEOCODING con Nominatim (gratis, sin key) ══
 // Respeta el límite de 1 req/seg de Nominatim
 let _lastNominatimCall=0;
 async function geocode(address,cacheKey){
   const cm=getCoordMaestro();
   if(cacheKey&&cm[cacheKey]){return cm[cacheKey];}
+
+  // Coordenadas manuales: si el cliente tiene lat,lng cargado a mano, usarlas directo
+  // (útil para direcciones de barrios/manzanas que Nominatim no puede ubicar)
+  if(cacheKey){
+    const manual=getCoordManualMaestro();
+    const ll=parseLatLng(manual[cacheKey]);
+    if(ll){
+      const result={lat:ll.lat,lng:ll.lng,formatted:address+' (coordenadas manuales)'};
+      cm[cacheKey]=result;
+      saveCoordMaestro(cm);
+      return result;
+    }
+  }
 
   // Throttle: esperar al menos 1100ms entre llamadas
   const now=Date.now();
@@ -1519,9 +1618,11 @@ async function armarZonas(){
 
   const clientes=[...new Set(data.map(r=>r.cliente||getMeta().suc).filter(Boolean))];
   const addrMaestro=getAddrMaestro();
+  const coordManual=getCoordManualMaestro();
   const puntos=clientes.map(cl=>({cliente:cl,addr:(addrMaestro[cl]||'').trim()}));
 
-  const sinAddr=puntos.filter(p=>!p.addr);
+  // Un cliente puede no tener dirección de texto si tiene coordenadas manuales cargadas
+  const sinAddr=puntos.filter(p=>!p.addr&&!parseLatLng(coordManual[p.cliente]));
   if(sinAddr.length){
     showMsg('zonasMsg',`❌ Faltan direcciones para: ${sinAddr.map(p=>p.cliente).join(', ')}`,'err');
     return;
@@ -1536,14 +1637,16 @@ async function armarZonas(){
 
     for(const p of puntos){
       try{
-        const g=await geocode(p.addr,p.cliente);
-        p.lat=g.lat;p.lng=g.lng;p.formatted=g.formatted;
+        // Si tiene coordenadas manuales, geocode las usa directo sin necesitar p.addr
+        const addrParaGeocode=p.addr||`(${p.cliente})`;
+        const g=await geocode(addrParaGeocode,p.cliente);
+        p.lat=g.lat;p.lng=g.lng;p.formatted=p.addr?g.formatted:`${p.cliente} (coordenadas manuales)`;
         const input=document.querySelector(`[data-cliente="${p.cliente}"]`);
         if(input)input.classList.add('geo-ok');
       }catch(e){
         const input=document.querySelector(`[data-cliente="${p.cliente}"]`);
         if(input)input.classList.add('geo-err');
-        throw new Error(`No se pudo encontrar la dirección de "${p.cliente}": ${p.addr}`);
+        throw new Error(`No se pudo encontrar la dirección de "${p.cliente}": ${p.addr||'(sin dirección, sin coordenadas válidas)'}`);
       }
     }
 
