@@ -2099,7 +2099,7 @@ async function calcularRutaOSRM(deposito,paradas){
   if(paradas.length===1){
     // Una sola parada: ida y vuelta directa, sin necesidad de optimizar orden
     const coordsList=`${lngLat(deposito)};${lngLat(paradas[0])}`;
-    const url=`${OSRM_URL}${coordsList}?roundtrip=true&source=first&destination=first&overview=full&geometries=geojson`;
+    const url=`${OSRM_URL}${coordsList}?roundtrip=true&source=first&overview=full&geometries=geojson`;
     const res=await fetch(url);
     const json=await res.json();
     if(json.code!=='Ok')throw new Error(json.message||'Error OSRM');
@@ -2114,7 +2114,7 @@ async function calcularRutaOSRM(deposito,paradas){
   }
 
   const coordsList=[deposito,...paradas].map(lngLat).join(';');
-  const url=`${OSRM_URL}${coordsList}?roundtrip=true&source=first&destination=first&overview=full&geometries=geojson`;
+  const url=`${OSRM_URL}${coordsList}?roundtrip=true&source=first&overview=full&geometries=geojson`;
   const res=await fetch(url);
   const json=await res.json();
   if(json.code!=='Ok'){
