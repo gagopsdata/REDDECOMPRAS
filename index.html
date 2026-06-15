@@ -107,6 +107,46 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
 .nav{display:flex;justify-content:space-between;align-items:center;margin-top:.75rem;gap:8px;flex-wrap:wrap}
 /* BLOQUEO */
 .block-banner{background:#FDEDEC;border:2px solid #E74C3C;border-radius:9px;padding:1rem 1.2rem;display:flex;align-items:center;gap:10px;font-size:13px;color:#922B21;font-weight:600;margin-bottom:1rem}
+/* ZONAS / CHOFERES */
+.zona-card{border-radius:10px;border:2px solid var(--bd);box-shadow:var(--sh);margin-bottom:1.1rem;overflow:hidden}
+.zona-hdr{padding:.7rem 1rem;display:flex;align-items:center;gap:10px;color:#fff;flex-wrap:wrap}
+.zona-hdr input{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:6px;padding:5px 10px;font-size:13px;font-weight:700;font-family:inherit;outline:none;flex:1;min-width:90px;max-width:180px}
+.zona-hdr input::placeholder{color:rgba(255,255,255,.7)}
+.zona-hdr .ph-r{margin-left:auto;font-size:12px;opacity:.9;white-space:nowrap}
+.zona-body{background:#fff;padding:.5rem 1rem;min-height:50px}
+.cliente-chip{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);margin-bottom:6px;cursor:grab;font-size:13px;transition:box-shadow .15s,transform .1s;flex-wrap:wrap}
+.cliente-chip:active{cursor:grabbing}
+.cliente-chip.dragging{opacity:.4}
+.cliente-chip .cc-num{width:22px;height:22px;border-radius:50%;background:var(--rojo);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cliente-chip .cc-info{flex:1;min-width:120px}
+.cliente-chip .cc-cliente{font-weight:600}
+.cliente-chip .cc-addr{font-size:11px;color:var(--tg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cliente-chip .cc-meta{font-size:11px;color:var(--tg);text-align:right;white-space:nowrap}
+.cliente-chip .cc-pago{display:flex;gap:6px;flex-shrink:0}
+.cliente-chip .cc-monto{width:90px;padding:5px 7px;border:1.5px solid var(--bd);border-radius:6px;font-size:12px;outline:none;font-family:inherit}
+.cliente-chip .cc-monto:focus{border-color:var(--rojo)}
+.cliente-chip .cc-formapago{padding:5px 7px;border:1.5px solid var(--bd);border-radius:6px;font-size:12px;outline:none;font-family:inherit;background:#fff;cursor:pointer}
+.cliente-chip .cc-formapago:focus{border-color:var(--rojo)}
+@media(max-width:640px){.cliente-chip .cc-pago{width:100%;justify-content:space-between}.cliente-chip .cc-monto{flex:1}.cliente-chip .cc-formapago{flex:1}}
+.zona-dropzone{min-height:40px;border:2px dashed transparent;border-radius:8px;transition:all .15s}
+.zona-dropzone.dragover{border-color:var(--rojo);background:var(--rojo-l)}
+.zona-empty{text-align:center;padding:1rem;color:var(--tg);font-size:12px;font-style:italic}
+#mapaZonas{width:100%;height:340px;border-radius:9px;border:1px solid var(--bd);margin-bottom:1rem}
+.stop-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)}
+.stop-num{width:26px;height:26px;border-radius:50%;background:var(--rojo);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.stop-num.depot{background:var(--azul)}
+.stop-info{flex:1;min-width:0}
+.stop-cliente{font-size:13px;font-weight:600}
+.stop-addr{font-size:11px;color:var(--tg);margin-top:1px}
+.stop-meta{font-size:11px;color:var(--tg);text-align:right;min-width:70px}
+.stop-input{flex:1;padding:6px 9px;border:1.5px solid var(--bd);border-radius:6px;font-size:12px;outline:none;font-family:inherit;transition:border-color .15s}
+.stop-input:focus{border-color:var(--rojo)}
+.stop-input.geo-ok{border-color:var(--verde);background:#EAFAF1}
+.stop-input.geo-err{border-color:#E74C3C;background:#FDEDEC}
+#mapaReparto{width:100%;height:340px;border-radius:9px;border:1px solid var(--bd);margin-top:1rem}
+.ruta-summary{display:flex;gap:.8rem;flex-wrap:wrap;margin-bottom:1rem}
+.ruta-chip{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:.6rem 1rem;font-size:13px}
+.ruta-chip strong{color:var(--rojo);font-size:16px}
 @media(max-width:640px){.g2,.g3,.metrics{grid-template-columns:1fr 1fr}.dl-grid{grid-template-columns:1fr}.toolbar{flex-direction:column;align-items:stretch}.search{width:100%}}
 
 
@@ -120,14 +160,15 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
 </div>
 <div class="steps">
   <button class="step active" id="s1" onclick="goStep(1)"><span class="sn">1</span> Cargar Excel</button>
-  <button class="step" id="s2" onclick="goStep(2)"><span class="sn">2</span> Pasillos</button>
-  <button class="step" id="s3" onclick="goStep(3)"><span class="sn">3</span> Asignar</button>
-  <button class="step" id="s4" onclick="goStep(4)"><span class="sn">4</span> Picking</button>
-  <button class="step" id="s5" onclick="goStep(5)"><span class="sn">5</span> Exportar</button>
+  <button class="step" id="s2" onclick="goStep(2)"><span class="sn">2</span> Reparto</button>
+  <button class="step" id="s3" onclick="goStep(3)"><span class="sn">3</span> Pasillos</button>
+  <button class="step" id="s4" onclick="goStep(4)"><span class="sn">4</span> Asignar</button>
+  <button class="step" id="s5" onclick="goStep(5)"><span class="sn">5</span> Picking</button>
+  <button class="step" id="s6" onclick="goStep(6)"><span class="sn">6</span> Exportar</button>
 </div>
 <div class="main">
 
-<!-- ═══ PASO 1 ═══ -->
+<!-- ═══ PASO 1: CARGAR EXCEL ═══ -->
 <div class="panel active" id="panel-1">
   <div class="card">
     <div class="ct">Subir archivo del pedido</div>
@@ -158,11 +199,11 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
     </div>
   </div>
   <div id="p1alert"></div>
-  <div class="nav"><div></div><button class="btn btn-r" id="btnN1" onclick="goStep(2)" disabled>Siguiente → Pasillos</button></div>
+  <div class="nav"><div></div><button class="btn btn-r" id="btnN1" onclick="goStep(2)" disabled>Siguiente → Reparto</button></div>
 </div>
 
-<!-- ═══ PASO 2 ═══ -->
-<div class="panel" id="panel-2">
+<!-- ═══ PASO 3: PASILLOS ═══ -->
+<div class="panel" id="panel-3">
   <div class="card">
     <div class="ct">Pasillos del depósito</div>
     <div class="alert a-info">🗺️ Definidos desde tu archivo base. Podés editar nombre y color — el número de pasillo es fijo.</div>
@@ -175,13 +216,13 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
     <div id="rulesEditor"></div>
   </div>
   <div class="nav">
-    <button class="btn btn-g" onclick="goStep(1)">← Volver</button>
-    <button class="btn btn-r" onclick="goStep(3)">Siguiente → Asignar</button>
+    <button class="btn btn-g" onclick="goStep(2)">← Reparto</button>
+    <button class="btn btn-r" onclick="goStep(4)">Siguiente → Asignar</button>
   </div>
 </div>
 
-<!-- ═══ PASO 3 ═══ -->
-<div class="panel" id="panel-3">
+<!-- ═══ PASO 4: ASIGNAR ═══ -->
+<div class="panel" id="panel-4">
   <div class="card" style="padding:.9rem 1.1rem">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <div id="aStats"></div>
@@ -207,32 +248,38 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
       <tfoot id="aFoot"></tfoot>
     </table>
   </div>
-  <div id="p3msg" style="margin-top:.75rem"></div>
+  <div id="p4msg" style="margin-top:.75rem"></div>
   <div class="nav" style="margin-top:.9rem">
-    <button class="btn btn-g" onclick="goStep(2)">← Pasillos</button>
+    <button class="btn btn-g" onclick="goStep(3)">← Pasillos</button>
     <button class="btn btn-v" onclick="confirmar()">💾 Confirmar y guardar</button>
-    <button class="btn btn-r" id="btnPicking" onclick="goStep(4)" disabled>Ver picking →</button>
+    <button class="btn btn-r" id="btnPicking" onclick="goStep(5)" disabled>Ver picking →</button>
   </div>
 </div>
 
-<!-- ═══ PASO 4 ═══ -->
-<div class="panel" id="panel-4">
+<!-- ═══ PASO 5: PICKING ═══ -->
+<div class="panel" id="panel-5">
   <div class="metrics" id="met4"></div>
   <div class="toolbar">
+    <div class="fld" style="flex:0 0 220px;margin:0">
+      <select id="filtroZona" onchange="renderPickingOutput()" style="padding:8px 11px;border:1.5px solid var(--bd);border-radius:7px;font-size:13px;outline:none;background:#fff;font-family:inherit;width:100%">
+        <option value="">📋 Picking completo (todos)</option>
+      </select>
+    </div>
     <button class="btn btn-g btn-sm" onclick="checkAll(false)">☐ Desmarcar todo</button>
     <span id="chkProg" style="font-size:13px;color:var(--tg)"></span>
     <div class="sp"></div>
-    <button class="btn btn-r" onclick="goStep(5)">Exportar →</button>
+    <button class="btn btn-r" onclick="goStep(6)">Exportar →</button>
   </div>
   <div id="pickOut"></div>
   <div class="nav">
-    <button class="btn btn-g" onclick="goStep(3)">← Volver a asignar</button>
-    <button class="btn btn-r" onclick="goStep(5)">Exportar →</button>
+    <button class="btn btn-g" onclick="goStep(4)">← Volver a asignar</button>
+    <button class="btn btn-r" onclick="goStep(6)">Exportar →</button>
   </div>
 </div>
 
-<!-- ═══ PASO 5 ═══ -->
-<div class="panel" id="panel-5">
+
+<!-- ═══ PASO 6: EXPORTAR ═══ -->
+<div class="panel" id="panel-6">
   <div class="metrics" id="met5"></div>
   <div class="card"><div class="ct">Vista previa</div><div id="prevOut"></div></div>
   <div class="card">
@@ -243,8 +290,36 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
     </div>
   </div>
   <div class="nav">
-    <button class="btn btn-g" onclick="goStep(4)">← Volver</button>
+    <button class="btn btn-g" onclick="goStep(5)">← Volver</button>
+    <button class="btn btn-g" onclick="goStep(2)">🗺️ Ajustar reparto</button>
     <button class="btn btn-g" onclick="nuevoP()">🔄 Nuevo picking</button>
+  </div>
+</div>
+
+<!-- ═══ PASO 2: REPARTO ═══ -->
+<div class="panel" id="panel-2">
+  <div class="card">
+    <div class="ct">Punto de partida (depósito)</div>
+    <div class="fld"><label>Dirección del depósito</label><input type="text" id="depositoAddr" placeholder="Av. ..., Ciudad, Provincia"></div>
+    <div style="margin-top:.6rem;font-size:12px;color:var(--tg)">🗺️ Ruteo gratuito vía OpenStreetMap (Nominatim + OSRM) — sin API key necesaria. Las coordenadas se guardan en el navegador para no repetir búsquedas.</div>
+  </div>
+
+  <div class="card">
+    <div class="ct">Direcciones por cliente</div>
+    <div class="alert a-info">📍 Completá la dirección de cada cliente del pedido. Se guardan automáticamente para futuros repartos.</div>
+    <div id="clienteAddrList"></div>
+  </div>
+
+  <div class="card" style="text-align:center">
+    <button class="btn btn-r" onclick="armarZonas()" id="btnArmarZonas">🗺️ Armar zonas y rutas (hasta 4 choferes)</button>
+    <div id="zonasMsg" style="margin-top:.75rem"></div>
+  </div>
+
+  <div id="zonasResult"></div>
+
+  <div class="nav">
+    <button class="btn btn-g" onclick="goStep(1)">← Cargar Excel</button>
+    <button class="btn btn-r" onclick="goStep(3)">Pasillos →</button>
   </div>
 </div>
 
@@ -387,7 +462,7 @@ function clearAssign(){data.forEach(r=>r.pasillo_num=null);renderAssign('');}
 function confirmar(){
   const sinP=data.filter(r=>!r.pasillo_num);
   if(sinP.length>0){
-    showMsg('p3msg',`🔒 Faltan ${sinP.length} producto${sinP.length>1?'s':''} sin pasillo. Asignalos antes de continuar.`,'err');
+    showMsg('p4msg',`🔒 Faltan ${sinP.length} producto${sinP.length>1?'s':''} sin pasillo. Asignalos antes de continuar.`,'err');
     document.getElementById('blockBanner').style.display='flex';
     document.getElementById('btnPicking').disabled=true;
     // Hacer scroll al primero sin asignar
@@ -406,7 +481,7 @@ function confirmar(){
   document.getElementById('blockBanner').style.display='none';
   document.getElementById('btnPicking').disabled=false;
   const st=getMaestroStats();
-  showMsg('p3msg',`✅ Asignación confirmada. Maestro: ${st.total} productos aprendidos (${st.byCod} por código, ${st.byDesc} por descripción).`,'ok');
+  showMsg('p4msg',`✅ Asignación confirmada. Maestro: ${st.total} productos aprendidos (${st.byCod} por código, ${st.byDesc} por descripción).`,'ok');
   setTimeout(()=>goStep(4),700);
 }
 
@@ -722,9 +797,9 @@ function goStep(n){
     saveMeta();
   }
   if(n>=3)savePasillos();
-  if(n===4&&data.some(r=>!r.pasillo_num)){
-    showMsg('p3msg','🔒 Confirmá la asignación primero.','err');
-    goStep(3);return;
+  if(n===5&&data.some(r=>!r.pasillo_num)){
+    showMsg('p4msg','🔒 Confirmá la asignación primero.','err');
+    goStep(4);return;
   }
 
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -735,10 +810,11 @@ function goStep(n){
     else if(i+1<n)s.classList.add('done');
   });
   updateTopChip();
-  if(n===2){renderPEditor();renderRulesEditor();}
-  if(n===3){renderAssign('');}
-  if(n===4){renderPickingOutput();}
-  if(n===5){renderExport();}
+  if(n===2){initReparto();renderClienteAddrList();document.getElementById('zonasResult').innerHTML='';document.getElementById('zonasMsg').innerHTML='';zonasState=null;}
+  if(n===3){renderPEditor();renderRulesEditor();}
+  if(n===4){renderAssign('');}
+  if(n===5){renderPickingOutput();}
+  if(n===6){renderExport();}
 }
 function updateTopChip(){
   const m=getMeta();const tot=data.reduce((s,r)=>s+r.cantidad,0);
@@ -853,30 +929,134 @@ function setP(i,sel){
            :'&nbsp;<span style="color:var(--verde);font-size:12px;font-weight:600">✅ Todos asignados</span>');
   document.getElementById('blockBanner').style.display=sinP>0?'flex':'none';
   document.getElementById('btnPicking').disabled=sinP>0;
-  if(sinP===0)showMsg('p3msg','✅ Todos asignados. Podés confirmar y continuar.','ok');
+  if(sinP===0)showMsg('p4msg','✅ Todos asignados. Podés confirmar y continuar.','ok');
 }
 
 // ══ PICKING OUTPUT ══
-function renderPickingOutput(){
-  const tot=data.reduce((s,r)=>s+r.cantidad,0);
-  const pUsados=sortedPasillos().filter(p=>data.some(r=>r.pasillo_num===p.num));
+// ══ HELPER: agrupar items por cliente, ordenado ══
+// Devuelve {cliente: {paradaNum, zonaNombre, zonaColor}} o null si no hay zonas calculadas
+function getOrdenClientes(){
+  if(!zonasState)return null;
+  const map={};
+  let any=false;
+  zonasState.zonas.forEach(z=>{
+    if(!z.ruta)return;
+    z.ruta.order.forEach((origIdx,i)=>{
+      const cl=z.clientes[origIdx].cliente;
+      map[cl]={paradaNum:i+1,zonaNombre:z.nombre,zonaColor:z.color};
+      any=true;
+    });
+  });
+  return any?map:null;
+}
 
-  const clientes=[...new Set(data.map(r=>r.cliente).filter(Boolean))];
+function groupByCliente(items){
+  const groups={};
+  items.forEach(r=>{
+    const cl=r.cliente||'—';
+    if(!groups[cl])groups[cl]=[];
+    groups[cl].push(r);
+  });
+
+  const ordenMap=getOrdenClientes();
+  const clienteKeys=Object.keys(groups);
+
+  let sortedKeys;
+  if(ordenMap){
+    // Ordenar: primero por zona (orden de zonasState), luego por número de parada
+    const zonaOrder={};
+    if(zonasState)zonasState.zonas.forEach((z,i)=>{zonaOrder[z.nombre]=i;});
+    sortedKeys=clienteKeys.sort((a,b)=>{
+      const oa=ordenMap[a], ob=ordenMap[b];
+      if(oa&&ob){
+        const za=zonaOrder[oa.zonaNombre]??99, zb=zonaOrder[ob.zonaNombre]??99;
+        if(za!==zb)return za-zb;
+        return oa.paradaNum-ob.paradaNum;
+      }
+      if(oa)return -1;
+      if(ob)return 1;
+      return a.localeCompare(b,'es');
+    });
+  }else{
+    sortedKeys=clienteKeys.sort((a,b)=>a.localeCompare(b,'es'));
+  }
+
+  return sortedKeys.map(cl=>({
+    cliente:cl,
+    paradaNum:ordenMap?.[cl]?.paradaNum||null,
+    zonaNombre:ordenMap?.[cl]?.zonaNombre||null,
+    zonaColor:ordenMap?.[cl]?.zonaColor||null,
+    items:groups[cl].sort((a,b)=>a.descripcion.localeCompare(b.descripcion,'es'))
+  }));
+}
+
+function renderPickingOutput(){
+  // ── Poblar selector de zonas/choferes ──
+  const sel=document.getElementById('filtroZona');
+  const prevVal=sel.value;
+  let zonaOpts='<option value="">📋 Picking completo (todos)</option>';
+  if(zonasState){
+    zonasState.zonas.forEach((z,zi)=>{
+      if(z.clientes.length)zonaOpts+=`<option value="${zi}">🚚 ${esc(z.nombre)} (${z.clientes.length} paradas)</option>`;
+    });
+  }
+  sel.innerHTML=zonaOpts;
+  sel.value=[...sel.options].some(o=>o.value===prevVal)?prevVal:'';
+
+  // ── Filtrar data según zona seleccionada ──
+  let dataFiltrada=data;
+  const zonaSel=sel.value;
+  if(zonaSel!==''&&zonasState){
+    const z=zonasState.zonas[parseInt(zonaSel)];
+    const clientesZona=new Set(z.clientes.map(p=>p.cliente));
+    dataFiltrada=data.filter(r=>clientesZona.has(r.cliente));
+  }
+
+  const tot=dataFiltrada.reduce((s,r)=>s+r.cantidad,0);
+  const pUsados=sortedPasillos().filter(p=>dataFiltrada.some(r=>r.pasillo_num===p.num));
+
+  const clientes=[...new Set(dataFiltrada.map(r=>r.cliente).filter(Boolean))];
   document.getElementById('met4').innerHTML=`
-    <div class="met"><div class="met-v">${data.length}</div><div class="met-l">Productos</div></div>
+    <div class="met"><div class="met-v">${dataFiltrada.length}</div><div class="met-l">Productos</div></div>
     <div class="met"><div class="met-v">${tot}</div><div class="met-l">Unidades</div></div>
     <div class="met"><div class="met-v">${pUsados.length}</div><div class="met-l">Pasillos</div></div>
     <div class="met"><div class="met-v" style="font-size:${clientes.length>1?'14px':'24px'}">${clientes.length?clientes.join(', '):'—'}</div><div class="met-l">Cliente${clientes.length>1?'s':''}</div></div>`;
 
-  document.getElementById('chkProg').textContent=`0 / ${data.length} chequeados`;
+  document.getElementById('chkProg').textContent=`0 / ${dataFiltrada.length} chequeados`;
   let html='';
   pUsados.forEach(p=>{
-    const items=data.filter(r=>r.pasillo_num===p.num).sort((a,b)=>a.descripcion.localeCompare(b.descripcion,'es'));
+    const items=dataFiltrada.filter(r=>r.pasillo_num===p.num);
     const sub=items.reduce((s,r)=>s+r.cantidad,0);
+    const grupos=groupByCliente(items);
+
+    let bodyHtml='';
+    grupos.forEach(g=>{
+      // Sub-encabezado de cliente: parada + chofer si hay zonas calculadas
+      let badges='';
+      if(g.paradaNum){
+        badges+=`<span style="background:${g.zonaColor||p.color};color:#fff;border-radius:20px;padding:1px 8px;font-size:11px;font-weight:700;margin-right:6px">🚚 ${esc(g.zonaNombre)} · Parada ${g.paradaNum}</span>`;
+      }
+      bodyHtml+=`<tr>
+        <td colspan="5" style="background:${p.color}10;color:${p.color};font-weight:700;font-size:12px;padding:5px 11px;border-top:1px solid ${p.color}33">
+          ${badges}👤 ${esc(g.cliente)} <span style="font-weight:400;opacity:.75">— ${g.items.length} ítem${g.items.length!==1?'s':''}</span>
+        </td>
+      </tr>`;
+      bodyHtml+=g.items.map((r,ri)=>{
+        const rid=`c${p.num}_${esc(g.cliente).replace(/\W/g,'')}_${ri}`;
+        return`<tr id="row_${rid}">
+          <td style="text-align:center"><input type="checkbox" id="${rid}" style="width:16px;height:16px;cursor:pointer;accent-color:${p.color}" onchange="tick('${rid}')"></td>
+          <td style="font-size:12px;color:var(--tg)">${esc(r.codigo)}</td>
+          <td>${esc(r.descripcion)}</td>
+          <td style="font-size:12px;color:var(--tg)">${esc(r.cliente||'—')}</td>
+          <td style="text-align:center;font-weight:700;font-size:14px">${r.cantidad}</td>
+        </tr>`;
+      }).join('');
+    });
+
     html+=`<div class="p-section">
       <div class="p-hdr" style="background:${p.color}">
         <span>📦 ${esc(p.nombre)}</span>
-        <span class="ph-r">${items.length} ítem${items.length!==1?'s':''} · ${sub} uds.</span>
+        <span class="ph-r">${items.length} ítem${items.length!==1?'s':''} · ${sub} uds. · ${grupos.length} cliente${grupos.length!==1?'s':''}</span>
       </div>
       <table><thead><tr>
         <th style="width:34px;text-align:center">✓</th>
@@ -885,16 +1065,7 @@ function renderPickingOutput(){
         <th style="width:110px">Cliente</th>
         <th style="width:75px;text-align:center">Cant.</th>
       </tr></thead><tbody>
-      ${items.map((r,ri)=>{
-        const rid=`c${p.num}_${ri}`;
-        return`<tr id="row_${rid}">
-          <td style="text-align:center"><input type="checkbox" id="${rid}" style="width:16px;height:16px;cursor:pointer;accent-color:${p.color}" onchange="tick('${rid}')"></td>
-          <td style="font-size:12px;color:var(--tg)">${esc(r.codigo)}</td>
-          <td>${esc(r.descripcion)}</td>
-          <td style="font-size:12px;color:var(--tg)">${esc(r.cliente||'—')}</td>
-          <td style="text-align:center;font-weight:700;font-size:14px">${r.cantidad}</td>
-        </tr>`;
-      }).join('')}
+      ${bodyHtml}
       </tbody>
       <tfoot><tr>
         <td colspan="4" style="text-align:right;background:${p.color}20;color:${p.color};font-weight:700;padding:7px 11px">Subtotal ${esc(p.nombre)}</td>
@@ -915,28 +1086,43 @@ function tick(rid){
 function checkAll(state){document.querySelectorAll('#pickOut input[type=checkbox]').forEach(c=>{c.checked=state;tick(c.id);});}
 
 // ══ EXPORT ══
-function renderMetrics(id){
-  const m=getMeta();const tot=data.reduce((s,r)=>s+r.cantidad,0);
+function renderMetrics(id,dataset){
+  const d=dataset||data;
+  const m=getMeta();const tot=d.reduce((s,r)=>s+r.cantidad,0);
   document.getElementById(id).innerHTML=`
-    <div class="met"><div class="met-v">${data.length}</div><div class="met-l">Productos</div></div>
+    <div class="met"><div class="met-v">${d.length}</div><div class="met-l">Productos</div></div>
     <div class="met"><div class="met-v">${tot}</div><div class="met-l">Unidades</div></div>
     <div class="met"><div class="met-v" style="font-size:15px">${m.suc}</div><div class="met-l">Sucursal</div></div>
     <div class="met"><div class="met-v" style="font-size:15px">${m.num}</div><div class="met-l">N° Picking</div></div>`;
 }
 
+// ══ HELPER: data filtrada por la zona seleccionada en el picking ══
+function getDataFiltrada(){
+  const sel=document.getElementById('filtroZona');
+  const zonaSel=sel?sel.value:'';
+  if(zonaSel!==''&&zonasState){
+    const z=zonasState.zonas[parseInt(zonaSel)];
+    const clientesZona=new Set(z.clientes.map(p=>p.cliente));
+    return{data:data.filter(r=>clientesZona.has(r.cliente)),zonaNombre:z.nombre};
+  }
+  return{data,zonaNombre:null};
+}
+
 function renderExport(){
-  renderMetrics('met5');
-  const m=getMeta();const tot=data.reduce((s,r)=>s+r.cantidad,0);
-  const pUsados=sortedPasillos().filter(p=>data.some(r=>r.pasillo_num===p.num));
+  const {data:dataF,zonaNombre}=getDataFiltrada();
+  renderMetrics('met5',dataF);
+  const m=getMeta();const tot=dataF.reduce((s,r)=>s+r.cantidad,0);
+  const pUsados=sortedPasillos().filter(p=>dataF.some(r=>r.pasillo_num===p.num));
   let html=`<div style="border-radius:8px;overflow:hidden;border:1px solid var(--bd)">
     <div style="background:var(--azul);color:#fff;padding:11px 14px;display:flex;justify-content:space-between;align-items:center">
       <div><div style="font-size:15px;font-weight:700">RED DE COMPRAS SAS</div>
-        <div style="font-size:11px;opacity:.75">Picking ${m.num} · ${m.suc} · ${m.fec}${m.cho?' · '+m.cho:''}</div></div>
-      <div style="font-size:12px;opacity:.8;text-align:right">${data.length} prods · ${tot} uds.</div>
+        <div style="font-size:11px;opacity:.75">Picking ${m.num} · ${m.suc} · ${m.fec}${m.cho?' · '+m.cho:''}${zonaNombre?' · 🚚 '+esc(zonaNombre):''}</div></div>
+      <div style="font-size:12px;opacity:.8;text-align:right">${dataF.length} prods · ${tot} uds.</div>
     </div>`;
   pUsados.forEach(p=>{
-    const items=data.filter(r=>r.pasillo_num===p.num).sort((a,b)=>a.descripcion.localeCompare(b.descripcion,'es'));
+    const items=dataF.filter(r=>r.pasillo_num===p.num);
     const sub=items.reduce((s,r)=>s+r.cantidad,0);
+    const grupos=groupByCliente(items);
     html+=`<div style="background:${p.color}18;border-left:4px solid ${p.color};padding:7px 14px;font-weight:700;font-size:13px;color:${p.color}">
       📦 ${esc(p.nombre)} — ${items.length} ítems · ${sub} uds.</div>
     <table style="width:100%;border-collapse:collapse;font-size:12px">
@@ -946,109 +1132,133 @@ function renderExport(){
         <th style="padding:5px 10px;color:#fff;width:100px">Cliente</th>
         <th style="padding:5px 10px;color:#fff;width:65px;text-align:center">Cant.</th>
       </tr></thead><tbody>
-      ${items.map((r,i)=>`<tr style="background:${i%2?'#fff':p.color+'0d'}">
-        <td style="padding:6px 10px;text-align:center;color:var(--tg)">${esc(r.codigo)}</td>
-        <td style="padding:6px 10px">${esc(r.descripcion)}</td>
-        <td style="padding:6px 10px;font-size:11px;color:var(--tg)">${esc(r.cliente||'—')}</td>
-        <td style="padding:6px 10px;text-align:center;font-weight:700">${r.cantidad}</td>
-      </tr>`).join('')}</tbody></table>`;
+      ${grupos.map(g=>`
+        <tr><td colspan="4" style="padding:4px 10px;background:${p.color}10;color:${p.color};font-weight:700;font-size:11px">👤 ${esc(g.cliente)}${g.paradaNum?` <span style="opacity:.7">— Parada ${g.paradaNum}</span>`:''}</td></tr>
+        ${g.items.map((r,i)=>`<tr style="background:${i%2?'#fff':p.color+'0d'}">
+          <td style="padding:6px 10px;text-align:center;color:var(--tg)">${esc(r.codigo)}</td>
+          <td style="padding:6px 10px">${esc(r.descripcion)}</td>
+          <td style="padding:6px 10px;font-size:11px;color:var(--tg)">${esc(r.cliente||'—')}</td>
+          <td style="padding:6px 10px;text-align:center;font-weight:700">${r.cantidad}</td>
+        </tr>`).join('')}
+      `).join('')}</tbody></table>`;
   });
   html+=`<div style="background:var(--azul);color:#fff;padding:8px 14px;font-weight:700;font-size:13px;display:flex;justify-content:space-between">
-    <span>TOTAL — ${data.length} productos</span><span>${tot} uds.</span></div></div>`;
+    <span>TOTAL — ${dataF.length} productos</span><span>${tot} uds.</span></div></div>`;
   document.getElementById('prevOut').innerHTML=html;
 }
 
 function exportExcel(){
+  const {data:dataF,zonaNombre}=getDataFiltrada();
   const m=getMeta();const wbOut=XLSX.utils.book_new();
-  const pUsados=sortedPasillos().filter(p=>data.some(r=>r.pasillo_num===p.num));
+  const pUsados=sortedPasillos().filter(p=>dataF.some(r=>r.pasillo_num===p.num));
+  const choferLine=zonaNombre?`Chofer/Zona: ${zonaNombre}  |  `:(m.cho?`Chofer: ${m.cho}  |  `:'');
   const rows=[
-    [`RED DE COMPRAS SAS — PICKING ${m.num}`],
-    [`Sucursal: ${m.suc}  |  Chofer: ${m.cho}  |  Fecha: ${m.fec}`],[],
+    [`RED DE COMPRAS SAS — PICKING ${m.num}${zonaNombre?' — '+zonaNombre:''}`],
+    [`Sucursal: ${m.suc}  |  ${choferLine}Fecha: ${m.fec}`],[],
     ['Pasillo','Código','Descripción','Cliente','Cantidad']
   ];
   let dr=5;
   pUsados.forEach(p=>{
-    data.filter(r=>r.pasillo_num===p.num)
-      .sort((a,b)=>a.descripcion.localeCompare(b.descripcion,'es'))
-      .forEach(r=>{rows.push([p.nombre,r.codigo,r.descripcion,r.cliente||m.suc,r.cantidad]);dr++;});
+    const items=dataF.filter(r=>r.pasillo_num===p.num);
+    const grupos=groupByCliente(items);
+    grupos.forEach(g=>{
+      g.items.forEach(r=>{rows.push([p.nombre,r.codigo,r.descripcion,r.cliente||m.suc,r.cantidad]);dr++;});
+    });
   });
-  rows.push(['TOTAL','',`${data.length} productos`,'',{f:`SUM(E5:E${dr-1})`}]);
+  rows.push(['TOTAL','',`${dataF.length} productos`,'',{f:`SUM(E5:E${dr-1})`}]);
   const ws=XLSX.utils.aoa_to_sheet(rows);
   ws['!cols']=[{wch:28},{wch:10},{wch:50},{wch:20},{wch:12}];
   ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:4}},{s:{r:1,c:0},e:{r:1,c:4}}];
   XLSX.utils.book_append_sheet(wbOut,ws,'Picking completo');
   pUsados.forEach(p=>{
-    const items=data.filter(r=>r.pasillo_num===p.num).sort((a,b)=>a.descripcion.localeCompare(b.descripcion,'es'));
+    const items=dataF.filter(r=>r.pasillo_num===p.num);
+    const grupos=groupByCliente(items);
     const sub=items.reduce((s,r)=>s+r.cantidad,0);
-    const wsP=XLSX.utils.aoa_to_sheet([
+    const sheetRows=[
       [`PASILLO ${p.num}: ${p.nombre}`],
-      [`Picking ${m.num} · ${m.suc} · ${m.fec}`],[],
-      ['Código','Descripción','Cliente','Cantidad'],
-      ...items.map(r=>[r.codigo,r.descripcion,r.cliente||m.suc,r.cantidad]),
-      ['TOTAL',`${items.length} productos`,'',sub]
-    ]);
+      [`Picking ${m.num} · ${m.suc} · ${m.fec}${zonaNombre?' · '+zonaNombre:''}`],[],
+      ['Código','Descripción','Cliente','Cantidad']
+    ];
+    grupos.forEach(g=>{
+      sheetRows.push([`— ${g.cliente}${g.paradaNum?' (Parada '+g.paradaNum+')':''} —`,'','','']);
+      g.items.forEach(r=>sheetRows.push([r.codigo,r.descripcion,r.cliente||m.suc,r.cantidad]));
+    });
+    sheetRows.push(['TOTAL',`${items.length} productos`,'',sub]);
+    const wsP=XLSX.utils.aoa_to_sheet(sheetRows);
     wsP['!cols']=[{wch:12},{wch:50},{wch:20},{wch:12}];
     XLSX.utils.book_append_sheet(wbOut,wsP,p.nombre.replace(/[\\/*?:[\]]/g,'').slice(0,31));
   });
-  XLSX.writeFile(wbOut,`picking_${m.num}.xlsx`);
+  const suffix=zonaNombre?'_'+zonaNombre.replace(/\s+/g,'_'):'';
+  XLSX.writeFile(wbOut,`picking_${m.num}${suffix}.xlsx`);
 }
 
 function exportPDF(){
+  const {data:dataF,zonaNombre}=getDataFiltrada();
   const m=getMeta();
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
-  const tot=data.reduce((s,r)=>s+r.cantidad,0);
+  const tot=dataF.reduce((s,r)=>s+r.cantidad,0);
 
   // ── Encabezado compacto ──
   doc.setFillColor(44,62,80);doc.rect(0,0,210,12,'F');
   doc.setFont('helvetica','bold');doc.setFontSize(10);doc.setTextColor(255,255,255);
-  doc.text('RED DE COMPRAS SAS',15,8);
+  doc.text(zonaNombre?`RED DE COMPRAS SAS — ${zonaNombre.toUpperCase()}`:'RED DE COMPRAS SAS',15,8);
   doc.setFont('helvetica','normal');doc.setFontSize(7.5);
   doc.text(`Picking ${m.num}  ·  ${m.suc}  ·  ${m.cho?m.cho+' · ':''}${m.fec}`,15,11.5);
-  doc.text(`${data.length} prods · ${tot} uds.`,195,8,{align:'right'});
+  doc.text(`${dataF.length} prods · ${tot} uds.`,195,8,{align:'right'});
 
   let y=15;
-  sortedPasillos().filter(p=>data.some(r=>r.pasillo_num===p.num)).forEach(p=>{
-    const items=data.filter(r=>r.pasillo_num===p.num)
-      .sort((a,b)=>a.descripcion.localeCompare(b.descripcion,'es'));
+  sortedPasillos().filter(p=>dataF.some(r=>r.pasillo_num===p.num)).forEach(p=>{
+    const items=dataF.filter(r=>r.pasillo_num===p.num);
     const sub=items.reduce((s,r)=>s+r.cantidad,0);
+    const grupos=groupByCliente(items);
     const hex=p.color.replace('#','');
     const pr=parseInt(hex.slice(0,2),16),pg=parseInt(hex.slice(2,4),16),pb=parseInt(hex.slice(4,6),16);
 
-    // Encabezado de pasillo — solo título de sección, sin repetir cabecera de columnas
+    // Encabezado de pasillo
     doc.setFillColor(pr,pg,pb);
     doc.rect(10,y,190,6,'F');
     doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setTextColor(255,255,255);
     doc.text(`P${p.num} — ${p.nombre.replace(/^Pasillo \d+ — /,'')}  ·  ${items.length} ítems · ${sub} uds.`,13,y+4.2);
     y+=7;
 
-    doc.autoTable({
-      startY:y,
-      head:false,   // sin encabezado de columnas
-      body:items.map(r=>[
-        `P${p.num}`,
-        r.codigo,
-        r.descripcion,
-        r.cantidad,
-        r.cliente||m.suc
-      ]),
-      showHead:false,   // sin encabezado
-      showFoot:false,   // sin subtotal
-      bodyStyles:{fontSize:8,cellPadding:1.8},
-      alternateRowStyles:{fillColor:[248,249,250]},
-      columnStyles:{
-        0:{cellWidth:13,halign:'center'},
-        1:{cellWidth:14,halign:'center'},
-        2:{cellWidth:'auto'},
-        3:{cellWidth:13,halign:'center',fontStyle:'bold'},
-        4:{cellWidth:28}
-      },
-      margin:{left:10,right:10},
-      tableLineColor:[220,220,220],
-      tableLineWidth:0.1,
+    grupos.forEach(g=>{
+      if(y>278){doc.addPage();y=12;}
+      // Sub-encabezado de cliente (liviano) + parada si hay ruta
+      doc.setFont('helvetica','bold');doc.setFontSize(7.5);
+      doc.setTextColor(pr,pg,pb);
+      const paradaTxt=g.paradaNum?` — Parada ${g.paradaNum}`:'';
+      doc.text(`👤 ${g.cliente}${paradaTxt}`,13,y+3);
+      y+=4.5;
+
+      doc.autoTable({
+        startY:y,
+        head:false,
+        body:g.items.map(r=>[
+          `P${p.num}`,
+          r.codigo,
+          r.descripcion,
+          r.cantidad,
+          r.cliente||m.suc
+        ]),
+        showHead:false,
+        showFoot:false,
+        bodyStyles:{fontSize:8,cellPadding:1.8},
+        alternateRowStyles:{fillColor:[248,249,250]},
+        columnStyles:{
+          0:{cellWidth:13,halign:'center'},
+          1:{cellWidth:14,halign:'center'},
+          2:{cellWidth:'auto'},
+          3:{cellWidth:13,halign:'center',fontStyle:'bold'},
+          4:{cellWidth:28}
+        },
+        margin:{left:10,right:10},
+        tableLineColor:[220,220,220],
+        tableLineWidth:0.1,
+      });
+      y=doc.lastAutoTable.finalY+2;
+      if(y>278){doc.addPage();y=12;}
     });
-    y=doc.lastAutoTable.finalY+2;  // espacio mínimo entre pasillos
-    if(y>272){doc.addPage();y=12;}
   });
 
   // Pie de página con número
@@ -1059,7 +1269,670 @@ function exportPDF(){
     doc.text(`Pág. ${i}/${pages}`,200,295,{align:'right'});
     doc.text('Red de Compras SAS · Sistema de Picking',10,295);
   }
-  doc.save(`picking_${m.num}.pdf`);
+  const suffix=zonaNombre?'_'+zonaNombre.replace(/\s+/g,'_'):'';
+  doc.save(`picking_${m.num}${suffix}.pdf`);
+}
+
+// ══ REPARTO — Nominatim (geocoding) + OSRM (ruteo) — 100% gratis, sin API key ══
+const DEPOSITO_DEFAULT='Av. Francisco de Aguirre 298, T4001FUC San Miguel de Tucumán, Tucumán';
+const NOMINATIM_URL='https://nominatim.openstreetmap.org/search';
+const OSRM_URL='https://router.project-osrm.org/trip/v1/driving/';
+
+function getReparto(){return JSON.parse(localStorage.getItem('rdc_reparto')||'null')||{}}
+function saveReparto(obj){localStorage.setItem('rdc_reparto',JSON.stringify(obj))}
+function getAddrMaestro(){return JSON.parse(localStorage.getItem('rdc_direcciones')||'{}')}
+function saveAddrMaestro(m){localStorage.setItem('rdc_direcciones',JSON.stringify(m))}
+function getCoordMaestro(){return JSON.parse(localStorage.getItem('rdc_coords')||'{}')}
+function saveCoordMaestro(m){localStorage.setItem('rdc_coords',JSON.stringify(m))}
+
+// (rutaResultado reemplazado por zonasState — ver módulo de zonas)
+
+function initReparto(){
+  const r=getReparto();
+  document.getElementById('depositoAddr').value=r.deposito||DEPOSITO_DEFAULT;
+  document.getElementById('depositoAddr').onchange=()=>{
+    saveReparto({...getReparto(),deposito:document.getElementById('depositoAddr').value});
+    // invalidar coordenada cacheada del depósito
+    const cm=getCoordMaestro();delete cm['__deposito__'];saveCoordMaestro(cm);
+  };
+}
+
+function renderClienteAddrList(){
+  const addrMaestro=getAddrMaestro();
+  // Clientes únicos del pedido actual
+  const clientes=[...new Set(data.map(r=>r.cliente||getMeta().suc).filter(Boolean))];
+
+  if(!clientes.length){
+    document.getElementById('clienteAddrList').innerHTML='<div class="alert a-warn">⚠ No hay clientes identificados en este pedido. Completá la columna Cliente en el paso de asignación.</div>';
+    return;
+  }
+
+  document.getElementById('clienteAddrList').innerHTML=clientes.map((cl,i)=>{
+    const saved=addrMaestro[cl]||'';
+    return`<div class="stop-row">
+      <div class="stop-num">${i+1}</div>
+      <div class="stop-info" style="flex:0 0 140px">
+        <div class="stop-cliente">${esc(cl)}</div>
+      </div>
+      <input type="text" class="stop-input" id="addr_${i}" value="${esc(saved)}"
+        placeholder="Dirección completa (calle, número, ciudad)"
+        data-cliente="${esc(cl)}"
+        onchange="onAddrChange(${i},this)">
+    </div>`;
+  }).join('');
+}
+
+function onAddrChange(i,input){
+  const cl=input.dataset.cliente;
+  const m=getAddrMaestro();
+  m[cl]=input.value.trim();
+  saveAddrMaestro(m);
+  input.classList.remove('geo-ok','geo-err');
+  // invalidar coordenada cacheada de este cliente (la dirección cambió)
+  const cm=getCoordMaestro();delete cm[cl];saveCoordMaestro(cm);
+}
+
+// ══ GEOCODING con Nominatim (gratis, sin key) ══
+// Respeta el límite de 1 req/seg de Nominatim
+let _lastNominatimCall=0;
+async function geocode(address,cacheKey){
+  const cm=getCoordMaestro();
+  if(cacheKey&&cm[cacheKey]){return cm[cacheKey];}
+
+  // Throttle: esperar al menos 1100ms entre llamadas
+  const now=Date.now();
+  const wait=Math.max(0,1100-(now-_lastNominatimCall));
+  if(wait>0)await new Promise(r=>setTimeout(r,wait));
+  _lastNominatimCall=Date.now();
+
+  const url=`${NOMINATIM_URL}?q=${encodeURIComponent(address)}&format=json&limit=1&countrycodes=ar`;
+  const res=await fetch(url,{headers:{'Accept':'application/json'}});
+  const json=await res.json();
+  if(!json.length)throw new Error('No se encontró la dirección');
+
+  const result={lat:parseFloat(json[0].lat),lng:parseFloat(json[0].lon),formatted:json[0].display_name};
+  if(cacheKey){
+    cm[cacheKey]=result;
+    saveCoordMaestro(cm);
+  }
+  return result;
+}
+
+// ══ ARMAR ZONAS: geocodificar + clustering geográfico (hasta 4 zonas) ══
+const ZONA_COLORS=['#C0392B','#2980B9','#27AE60','#8E44AD'];
+const ZONA_NOMBRES_DEFAULT=['Chofer 1','Chofer 2','Chofer 3','Chofer 4'];
+const ZONA_ETIQUETAS_DEFAULT=['Zona 1','Zona 2','Zona 3','Zona 4'];
+
+let zonasState=null; // {zonas:[{nombre,color,clientes:[{cliente,addr,lat,lng,formatted}]}], deposito}
+
+async function armarZonas(){
+  const deposito=document.getElementById('depositoAddr').value.trim();
+  saveReparto({deposito});
+  if(!deposito){showMsg('zonasMsg','❌ Ingresá la dirección del depósito.','err');return;}
+
+  const clientes=[...new Set(data.map(r=>r.cliente||getMeta().suc).filter(Boolean))];
+  const addrMaestro=getAddrMaestro();
+  const puntos=clientes.map(cl=>({cliente:cl,addr:(addrMaestro[cl]||'').trim()}));
+
+  const sinAddr=puntos.filter(p=>!p.addr);
+  if(sinAddr.length){
+    showMsg('zonasMsg',`❌ Faltan direcciones para: ${sinAddr.map(p=>p.cliente).join(', ')}`,'err');
+    return;
+  }
+  if(puntos.length<1){showMsg('zonasMsg','❌ No hay clientes para armar zonas.','err');return;}
+
+  document.getElementById('btnArmarZonas').disabled=true;
+  showMsg('zonasMsg','⏳ Geocodificando direcciones (puede tardar unos segundos)...','info');
+
+  try{
+    const depGeo=await geocode(deposito,'__deposito__');
+
+    for(const p of puntos){
+      try{
+        const g=await geocode(p.addr,p.cliente);
+        p.lat=g.lat;p.lng=g.lng;p.formatted=g.formatted;
+        const input=document.querySelector(`[data-cliente="${p.cliente}"]`);
+        if(input)input.classList.add('geo-ok');
+      }catch(e){
+        const input=document.querySelector(`[data-cliente="${p.cliente}"]`);
+        if(input)input.classList.add('geo-err');
+        throw new Error(`No se pudo encontrar la dirección de "${p.cliente}": ${p.addr}`);
+      }
+    }
+
+    showMsg('zonasMsg','⏳ Agrupando por zonas geográficas...','info');
+
+    // Determinar K (1-4) según cantidad de puntos: ~1 zona cada 6-8 paradas, máx 4
+    let k=Math.min(4,Math.max(1,Math.ceil(puntos.length/7)));
+    if(puntos.length<=3)k=1;
+
+    const clusters=kmeans(puntos,k);
+
+    // Cargar nombres de chofer y etiquetas de zona guardados o defaults
+    const savedNombres=getZonaNombres();
+    const savedEtiquetas=getZonaEtiquetas();
+    zonasState={
+      deposito:{...depGeo,nombre:'Depósito'},
+      zonas:clusters.map((pts,i)=>({
+        nombre:savedNombres[i]||ZONA_NOMBRES_DEFAULT[i],
+        etiqueta:savedEtiquetas[i]||ZONA_ETIQUETAS_DEFAULT[i],
+        color:ZONA_COLORS[i],
+        clientes:pts,
+        ruta:null // se calcula al render
+      }))
+    };
+
+    showMsg('zonasMsg',`✅ ${zonasState.zonas.length} zona${zonasState.zonas.length!==1?'s':''} propuesta${zonasState.zonas.length!==1?'s':''}. Podés arrastrar clientes entre zonas y luego calcular las rutas.`,'ok');
+    renderZonas();
+
+  }catch(err){
+    console.error(err);
+    showMsg('zonasMsg','❌ '+err.message,'err');
+  }finally{
+    document.getElementById('btnArmarZonas').disabled=false;
+  }
+}
+
+// ══ K-MEANS simple sobre lat/lng ══
+function kmeans(puntos,k){
+  if(puntos.length<=k){
+    return puntos.map(p=>[p]); // cada punto su propia zona
+  }
+  // Inicializar centroides: tomar k puntos espaciados
+  let centroids=[];
+  for(let i=0;i<k;i++){
+    centroids.push({lat:puntos[Math.floor(i*puntos.length/k)].lat,lng:puntos[Math.floor(i*puntos.length/k)].lng});
+  }
+
+  let assignments=new Array(puntos.length).fill(0);
+  for(let iter=0;iter<15;iter++){
+    // Asignar cada punto al centroide más cercano
+    let changed=false;
+    puntos.forEach((p,i)=>{
+      let best=0,bestDist=Infinity;
+      centroids.forEach((c,ci)=>{
+        const d=(p.lat-c.lat)**2+(p.lng-c.lng)**2;
+        if(d<bestDist){bestDist=d;best=ci;}
+      });
+      if(assignments[i]!==best){assignments[i]=best;changed=true;}
+    });
+    // Recalcular centroides
+    centroids=centroids.map((c,ci)=>{
+      const grupo=puntos.filter((_,i)=>assignments[i]===ci);
+      if(!grupo.length)return c;
+      return{
+        lat:grupo.reduce((s,p)=>s+p.lat,0)/grupo.length,
+        lng:grupo.reduce((s,p)=>s+p.lng,0)/grupo.length
+      };
+    });
+    if(!changed)break;
+  }
+
+  const clusters=Array.from({length:k},()=>[]);
+  puntos.forEach((p,i)=>clusters[assignments[i]].push(p));
+  // Eliminar clusters vacíos
+  return clusters.filter(c=>c.length>0);
+}
+
+// ══ NOMBRES DE CHOFER (maestro) ══
+function getZonaNombres(){return JSON.parse(localStorage.getItem('rdc_zona_nombres')||'[]')}
+function saveZonaNombres(arr){localStorage.setItem('rdc_zona_nombres',JSON.stringify(arr))}
+function getZonaEtiquetas(){return JSON.parse(localStorage.getItem('rdc_zona_etiquetas')||'[]')}
+function saveZonaEtiquetas(arr){localStorage.setItem('rdc_zona_etiquetas',JSON.stringify(arr))}
+
+// ══ RENDER ZONAS (con drag & drop) ══
+function renderZonas(){
+  if(!zonasState)return;
+  const {zonas}=zonasState;
+
+  let html=`<div class="card"><div class="ct">Zonas propuestas — arrastrá clientes para ajustar</div>`;
+  html+=`<div id="mapaZonas"></div>`;
+
+  zonas.forEach((z,zi)=>{
+    html+=`<div class="zona-card" style="border-color:${z.color}55">
+      <div class="zona-hdr" style="background:${z.color}">
+        <span>🚚</span>
+        <input type="text" value="${esc(z.nombre)}" placeholder="Nombre del chofer" oninput="renameZona(${zi},this.value)">
+        <input type="text" value="${esc(z.etiqueta||'')}" placeholder="Zona (ej: Zona Norte)" oninput="relabelZona(${zi},this.value)" style="max-width:140px">
+        <span class="ph-r" id="zonaInfo_${zi}">${z.clientes.length} parada${z.clientes.length!==1?'s':''}</span>
+      </div>
+      <div class="zona-body">
+        <div class="zona-dropzone" id="dropzone_${zi}" data-zona="${zi}">
+          ${z.clientes.length?z.clientes.map((p,pi)=>clienteChipHtml(p,zi,pi,z.color)).join(''):'<div class="zona-empty">Sin clientes — arrastrá uno aquí</div>'}
+        </div>
+      </div>
+    </div>`;
+  });
+
+  html+=`<div style="text-align:center;margin-top:.5rem">
+    <button class="btn btn-r" onclick="calcularRutasZonas()" id="btnCalcRutas">🗺️ Calcular rutas de todas las zonas</button>
+  </div>
+  <div id="rutasMsg" style="margin-top:.5rem;text-align:center"></div>
+  </div>`;
+
+  html+=`<div id="rutasResult"></div>`;
+
+  document.getElementById('zonasResult').innerHTML=html;
+  setupDragDrop();
+  loadLeaflet(()=>renderMapaZonas());
+}
+
+// ══ MONTO / FORMA DE PAGO POR CLIENTE (maestro persistente) ══
+function getPagoMaestro(){return JSON.parse(localStorage.getItem('rdc_pagos')||'{}')}
+function savePagoMaestro(m){localStorage.setItem('rdc_pagos',JSON.stringify(m))}
+
+function onMontoChange(zi,pi,val){
+  const cliente=zonasState.zonas[zi].clientes[pi].cliente;
+  const m=getPagoMaestro();
+  if(!m[cliente])m[cliente]={};
+  m[cliente].monto=parseFloat(val)||0;
+  savePagoMaestro(m);
+}
+function onFormaPagoChange(zi,pi,val){
+  const cliente=zonasState.zonas[zi].clientes[pi].cliente;
+  const m=getPagoMaestro();
+  if(!m[cliente])m[cliente]={};
+  m[cliente].formaPago=val;
+  savePagoMaestro(m);
+}
+function getPagoCliente(cliente){
+  const m=getPagoMaestro();
+  return m[cliente]||{monto:0,formaPago:'efectivo'};
+}
+
+function clienteChipHtml(p,zi,pi,color){
+  const pago=getPagoCliente(p.cliente);
+  return`<div class="cliente-chip" draggable="true" data-zi="${zi}" data-pi="${pi}" style="border-left:4px solid ${color}">
+    <div class="cc-num" style="background:${color}">${pi+1}</div>
+    <div class="cc-info">
+      <div class="cc-cliente">${esc(p.cliente)}</div>
+      <div class="cc-addr">${esc(p.formatted||p.addr)}</div>
+    </div>
+    <div class="cc-pago">
+      <input type="number" class="cc-monto" placeholder="$ Monto" value="${pago.monto||''}"
+        min="0" step="0.01" onchange="onMontoChange(${zi},${pi},this.value)">
+      <select class="cc-formapago" onchange="onFormaPagoChange(${zi},${pi},this.value)">
+        <option value="efectivo"${pago.formaPago==='efectivo'?' selected':''}>💵 Efectivo</option>
+        <option value="transferencia"${pago.formaPago==='transferencia'?' selected':''}>🏦 Transferencia</option>
+        <option value="cta_cte"${pago.formaPago==='cta_cte'?' selected':''}>📋 Cta. Cte.</option>
+      </select>
+    </div>
+  </div>`;
+}
+
+function renameZona(zi,val){
+  zonasState.zonas[zi].nombre=val;
+  const nombres=zonasState.zonas.map(z=>z.nombre);
+  saveZonaNombres(nombres);
+}
+
+function relabelZona(zi,val){
+  zonasState.zonas[zi].etiqueta=val;
+  const etiquetas=zonasState.zonas.map(z=>z.etiqueta);
+  saveZonaEtiquetas(etiquetas);
+}
+
+// Drag & drop entre zonas
+function setupDragDrop(){
+  document.querySelectorAll('.cliente-chip').forEach(chip=>{
+    chip.addEventListener('dragstart',e=>{
+      chip.classList.add('dragging');
+      e.dataTransfer.setData('text/plain',JSON.stringify({zi:chip.dataset.zi,pi:chip.dataset.pi}));
+    });
+    chip.addEventListener('dragend',()=>chip.classList.remove('dragging'));
+    // Evitar que clickear/escribir en los campos de pago dispare el drag
+    chip.querySelectorAll('.cc-monto,.cc-formapago').forEach(el=>{
+      el.addEventListener('mousedown',e=>e.stopPropagation());
+      el.addEventListener('click',e=>e.stopPropagation());
+    });
+  });
+  document.querySelectorAll('.zona-dropzone').forEach(zone=>{
+    zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('dragover');});
+    zone.addEventListener('dragleave',()=>zone.classList.remove('dragover'));
+    zone.addEventListener('drop',e=>{
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      const data=JSON.parse(e.dataTransfer.getData('text/plain'));
+      const fromZi=parseInt(data.zi),fromPi=parseInt(data.pi);
+      const toZi=parseInt(zone.dataset.zona);
+      if(fromZi===toZi)return;
+
+      // Mover el cliente de una zona a otra
+      const [moved]=zonasState.zonas[fromZi].clientes.splice(fromPi,1);
+      zonasState.zonas[toZi].clientes.push(moved);
+
+      // Invalidar rutas calculadas (cambió la composición)
+      zonasState.zonas.forEach(z=>z.ruta=null);
+      document.getElementById('rutasResult').innerHTML='';
+
+      renderZonas();
+    });
+  });
+}
+
+function renderMapaZonas(){
+  if(!zonasState||!window.L)return;
+  const {deposito,zonas}=zonasState;
+
+  // Reusar contenedor: limpiar mapa anterior si existe
+  const container=document.getElementById('mapaZonas');
+  if(container._leaflet_id){container._leaflet_id=null;container.innerHTML='';}
+
+  const map=L.map('mapaZonas').setView([deposito.lat,deposito.lng],12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors',maxZoom:19}).addTo(map);
+
+  const bounds=[[deposito.lat,deposito.lng]];
+  L.circleMarker([deposito.lat,deposito.lng],{radius:9,fillColor:'#2C3E50',color:'#fff',weight:2,fillOpacity:1}).addTo(map).bindPopup('🏠 Depósito');
+
+  zonas.forEach(z=>{
+    z.clientes.forEach(p=>{
+      bounds.push([p.lat,p.lng]);
+      L.circleMarker([p.lat,p.lng],{radius:8,fillColor:z.color,color:'#fff',weight:2,fillOpacity:1}).addTo(map).bindPopup(`${esc(z.nombre)}<br>${esc(p.cliente)}`);
+    });
+  });
+
+  if(bounds.length>1)map.fitBounds(bounds,{padding:[30,30]});
+}
+
+// ══ CALCULAR RUTA POR ZONA (OSRM Trip API) ══
+// ══ Límite de jornada: tiempo total (viaje + 10min por parada) <= 270 min (4h30) ══
+const TIEMPO_MAX_MIN=270;
+const TIEMPO_POR_PARADA_MIN=10;
+
+function tiempoTotalZona(z){
+  if(!z.ruta)return 0;
+  return z.ruta.totalMin + z.clientes.length*TIEMPO_POR_PARADA_MIN;
+}
+
+async function calcularRutasZonas(){
+  if(!zonasState)return;
+  document.getElementById('btnCalcRutas').disabled=true;
+  showMsg('rutasMsg','⏳ Calculando rutas óptimas por zona...','info');
+
+  try{
+    // Cálculo inicial de cada zona
+    for(const z of zonasState.zonas){
+      if(!z.clientes.length){z.ruta=null;continue;}
+      z.ruta=await calcularRutaOSRM(zonasState.deposito,z.clientes);
+    }
+
+    // ── Rebalanceo: si alguna zona supera 4h30, mover su parada más
+    //    conveniente a la zona con más margen disponible ──
+    let moved=0;
+    const MAX_ITER=12;
+    for(let iter=0;iter<MAX_ITER;iter++){
+      // Buscar la zona más sobrecargada
+      let peor=null,peorExceso=0;
+      zonasState.zonas.forEach((z,zi)=>{
+        if(z.clientes.length<=1)return; // no se puede achicar más
+        const t=tiempoTotalZona(z);
+        const exceso=t-TIEMPO_MAX_MIN;
+        if(exceso>peorExceso){peorExceso=exceso;peor=zi;}
+      });
+      if(peor===null)break; // todas dentro del límite
+
+      // Buscar la zona con más margen disponible (la que tenga menor tiempo total)
+      let destino=null,menorTiempo=Infinity;
+      zonasState.zonas.forEach((z,zi)=>{
+        if(zi===peor)return;
+        const t=tiempoTotalZona(z)+TIEMPO_POR_PARADA_MIN; // tiempo que tendría si recibe 1 más
+        if(t<menorTiempo){menorTiempo=t;destino=zi;}
+      });
+      if(destino===null)break; // solo hay 1 zona, no se puede mover nada
+
+      // Elegir qué parada de la zona sobrecargada mover:
+      // la más cercana (geográficamente) al centroide de la zona destino
+      const zOrig=zonasState.zonas[peor];
+      const zDest=zonasState.zonas[destino];
+      const centDest=centroide(zDest.clientes.length?zDest.clientes:[zonasState.deposito]);
+
+      let bestIdx=0,bestDist=Infinity;
+      zOrig.clientes.forEach((p,i)=>{
+        const d=(p.lat-centDest.lat)**2+(p.lng-centDest.lng)**2;
+        if(d<bestDist){bestDist=d;bestIdx=i;}
+      });
+
+      const [movedParada]=zOrig.clientes.splice(bestIdx,1);
+      zDest.clientes.push(movedParada);
+      moved++;
+
+      // Recalcular ambas zonas afectadas
+      zOrig.ruta=zOrig.clientes.length?await calcularRutaOSRM(zonasState.deposito,zOrig.clientes):null;
+      zDest.ruta=await calcularRutaOSRM(zonasState.deposito,zDest.clientes);
+    }
+
+    // Verificar si quedó alguna zona excedida después del rebalanceo
+    const excedidas=zonasState.zonas.filter(z=>z.clientes.length&&tiempoTotalZona(z)>TIEMPO_MAX_MIN);
+
+    if(moved>0){
+      showMsg('rutasMsg',`✅ Rutas calculadas. Se reasignaron ${moved} parada${moved!==1?'s':''} entre zonas para respetar el límite de 4h30.`,'ok');
+    }else{
+      showMsg('rutasMsg','✅ Rutas calculadas para todas las zonas.','ok');
+    }
+    if(excedidas.length){
+      const nombres=excedidas.map(z=>z.nombre).join(', ');
+      showMsg('rutasMsg',`⚠️ ${nombres}: no se pudo bajar de 4h30 (quedó${excedidas.length>1?'on':''} con muy pocas paradas para repartir más). Revisá manualmente.`,'warn');
+    }
+    renderRutasResult();
+  }catch(err){
+    console.error(err);
+    showMsg('rutasMsg','❌ '+err.message,'err');
+  }finally{
+    document.getElementById('btnCalcRutas').disabled=false;
+  }
+}
+
+function centroide(puntos){
+  return{
+    lat:puntos.reduce((s,p)=>s+p.lat,0)/puntos.length,
+    lng:puntos.reduce((s,p)=>s+p.lng,0)/puntos.length
+  };
+}
+
+// Calcula ruta óptima (orden + distancias) para un set de paradas usando OSRM Trip API
+async function calcularRutaOSRM(deposito,paradas){
+  if(paradas.length===1){
+    // Una sola parada: ida y vuelta directa, sin necesidad de optimizar orden
+    const coordsList=`${deposito.lng},${deposito.lat};${paradas[0].lng},${paradas[0].lat}`;
+    const url=`${OSRM_URL}${coordsList}?roundtrip=true&source=first&destination=first&overview=full&geometries=geojson`;
+    const res=await fetch(url);
+    const json=await res.json();
+    if(json.code!=='Ok')throw new Error(json.message||'Error OSRM');
+    const trip=json.trips[0];
+    return{
+      order:[0],
+      legs:trip.legs.map(l=>({distance:{value:l.distance,text:(l.distance/1000).toFixed(1)+' km'},duration:{value:l.duration,text:Math.round(l.duration/60)+' min'}})),
+      totalKm:trip.distance/1000,
+      totalMin:trip.duration/60,
+      geometry:trip.geometry
+    };
+  }
+
+  const coordsList=[deposito,...paradas].map(p=>`${p.lng},${p.lat}`).join(';');
+  const url=`${OSRM_URL}${coordsList}?roundtrip=true&source=first&destination=first&overview=full&geometries=geojson`;
+  const res=await fetch(url);
+  const json=await res.json();
+  if(json.code!=='Ok')throw new Error(json.message||'Error al calcular la ruta con OSRM');
+
+  const trip=json.trips[0];
+  const waypoints=json.waypoints;
+
+  const order=[];
+  waypoints.forEach((wp,inputIdx)=>{
+    if(inputIdx===0)return;
+    order.push({inputIdx:inputIdx-1,tripIndex:wp.waypoint_index});
+  });
+  order.sort((a,b)=>a.tripIndex-b.tripIndex);
+  const orderIdxs=order.map(o=>o.inputIdx);
+
+  const legs=trip.legs.map(l=>({
+    distance:{value:l.distance,text:(l.distance/1000).toFixed(1)+' km'},
+    duration:{value:l.duration,text:Math.round(l.duration/60)+' min'}
+  }));
+
+  return{order:orderIdxs,legs,totalKm:trip.distance/1000,totalMin:trip.duration/60,geometry:trip.geometry};
+}
+
+// ══ RENDER RESULTADO DE RUTAS POR ZONA ══
+function renderRutasResult(){
+  if(!zonasState)return;
+  const {deposito,zonas}=zonasState;
+
+  let html='';
+  zonas.forEach((z,zi)=>{
+    if(!z.ruta)return;
+    const {order,legs,totalKm,totalMin}=z.ruta;
+    const tiempoTotal=tiempoTotalZona(z);
+    const excedido=tiempoTotal>TIEMPO_MAX_MIN;
+    const horas=Math.floor(tiempoTotal/60), mins=Math.round(tiempoTotal%60);
+
+    html+=`<div class="card">
+      <div class="ct" style="color:${z.color}">🚚 ${esc(z.nombre)}</div>
+      <div class="ruta-summary">
+        <div class="ruta-chip"><strong>${z.clientes.length}</strong> paradas</div>
+        <div class="ruta-chip"><strong>${totalKm.toFixed(1)}</strong> km</div>
+        <div class="ruta-chip"><strong>${Math.round(totalMin)}</strong> min viaje</div>
+        <div class="ruta-chip" style="${excedido?'border-color:#E74C3C;background:#FDEDEC;color:#922B21':''}">
+          <strong>${horas}h ${mins}min</strong> total (con 10min/parada)${excedido?' ⚠️ supera 4h30':''}
+        </div>
+      </div>`;
+
+    html+=`<div class="stop-row">
+      <div class="stop-num depot">🏠</div>
+      <div class="stop-info"><div class="stop-cliente">Depósito (salida)</div><div class="stop-addr">${esc(deposito.formatted)}</div></div>
+    </div>`;
+
+    order.forEach((origIdx,i)=>{
+      const p=z.clientes[origIdx];
+      const leg=legs[i];
+      html+=`<div class="stop-row">
+        <div class="stop-num" style="background:${z.color}">${i+1}</div>
+        <div class="stop-info"><div class="stop-cliente">${esc(p.cliente)}</div><div class="stop-addr">${esc(p.formatted)}</div></div>
+        <div class="stop-meta">${leg?leg.distance.text:''}<br>${leg?leg.duration.text:''}</div>
+      </div>`;
+    });
+
+    const lastLeg=legs[legs.length-1];
+    html+=`<div class="stop-row">
+      <div class="stop-num depot">🏠</div>
+      <div class="stop-info"><div class="stop-cliente">Depósito (regreso)</div><div class="stop-addr">${esc(deposito.formatted)}</div></div>
+      <div class="stop-meta">${lastLeg?lastLeg.distance.text:''}<br>${lastLeg?lastLeg.duration.text:''}</div>
+    </div>`;
+
+    html+=`<div style="margin-top:1rem">
+      <button class="btn btn-v dl-btn" style="width:100%" onclick="exportRutaPDF(${zi})">📄 Descargar hoja de ruta — ${esc(z.nombre)}<small>.pdf — para el chofer</small></button>
+    </div>
+    </div>`;
+  });
+
+  document.getElementById('rutasResult').innerHTML=html;
+}
+
+// Devuelve, para un cliente dado, a qué zona pertenece y qué número de parada le toca
+function getZonaInfoCliente(cliente){
+  if(!zonasState)return null;
+  for(const z of zonasState.zonas){
+    if(!z.ruta)continue;
+    const idx=z.clientes.findIndex(p=>p.cliente===cliente);
+    if(idx<0)continue;
+    const ordenPos=z.ruta.order.indexOf(idx);
+    if(ordenPos<0)continue;
+    return{zonaNombre:z.nombre,zonaColor:z.color,paradaNum:ordenPos+1};
+  }
+  return null;
+}
+
+// ══ EXPORT HOJA DE RUTA PDF (por zona/chofer) ══
+function exportRutaPDF(zi){
+  if(!zonasState)return;
+  const z=zonasState.zonas[zi];
+  if(!z||!z.ruta)return;
+  const {deposito}=zonasState;
+  const {order}=z.ruta;
+  const paradas=z.clientes;
+  const m=getMeta();
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'p',unit:'mm',format:'a4'});
+
+  // Fecha DD/MM/AAAA (m.fec viene como YYYY-MM-DD del input date)
+  let fechaFmt=m.fec;
+  const fm=/^(\d{4})-(\d{2})-(\d{2})$/.exec(m.fec);
+  if(fm)fechaFmt=`${fm[3]}/${fm[2]}/${fm[1]}`;
+
+  // ── ENCABEZADO: Fecha · Chofer · Zona (editables previamente en pantalla) ──
+  doc.setFillColor(44,62,80);doc.rect(0,0,210,20,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(255,255,255);
+  doc.text('HOJA DE RUTA',15,9);
+  doc.setFont('helvetica','normal');doc.setFontSize(9);
+  doc.text(`Fecha: ${fechaFmt}`,15,15.5);
+  doc.text(`Chofer: ${z.nombre}`,75,15.5);
+  doc.text(`Zona: ${z.etiqueta||z.nombre}`,150,15.5);
+
+  // ── CUERPO: orden de reparto, cliente, dirección, monto, casillas de pago (vacías — las marca el chofer) ──
+  const body=[];
+  let totalMonto=0;
+  order.forEach((origIdx,i)=>{
+    const p=paradas[origIdx];
+    const pago=getPagoCliente(p.cliente);
+    totalMonto+=pago.monto||0;
+    body.push([
+      String(i+1),
+      p.cliente,
+      p.formatted,
+      pago.monto?`$${pago.monto.toLocaleString('es-AR',{minimumFractionDigits:2})}`:'—',
+      '','',''
+    ]);
+  });
+
+  const hex=z.color.replace('#','');
+  const pr=parseInt(hex.slice(0,2),16),pg=parseInt(hex.slice(2,4),16),pb=parseInt(hex.slice(4,6),16);
+
+  doc.autoTable({
+    startY:25,
+    head:[['#','Cliente','Dirección','Monto','Efvo.','Transf.','Cta.Cte.']],
+    body,
+    headStyles:{fillColor:[pr,pg,pb],textColor:255,fontStyle:'bold',fontSize:8.5,halign:'center'},
+    bodyStyles:{fontSize:8.5,cellPadding:2.5},
+    alternateRowStyles:{fillColor:[244,246,247]},
+    columnStyles:{
+      0:{cellWidth:9,halign:'center',fontStyle:'bold'},
+      1:{cellWidth:36},
+      2:{cellWidth:'auto'},
+      3:{cellWidth:22,halign:'right'},
+      4:{cellWidth:14,halign:'center',fontStyle:'bold'},
+      5:{cellWidth:14,halign:'center',fontStyle:'bold'},
+      6:{cellWidth:14,halign:'center',fontStyle:'bold'}
+    },
+    didParseCell:(d)=>{
+      // Encabezados de las 3 columnas de pago: fuente más chica
+      if(d.section==='head'&&d.column.index>=4){d.cell.styles.fontSize=7;}
+      // Celdas de pago vacías: dibujar un recuadro para que el chofer marque a mano
+      if(d.section==='body'&&d.column.index>=4){
+        d.cell.styles.lineWidth=0.3;
+        d.cell.styles.lineColor=[120,120,120];
+      }
+    },
+    margin:{left:12,right:12}
+  });
+
+  // ── PIE: cantidad de pedidos + total a cobrar ──
+  let y=doc.lastAutoTable.finalY+8;
+
+  doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(44,62,80);
+  doc.text(`CANTIDAD DE PEDIDOS: ${paradas.length}`,15,y);
+  if(totalMonto>0){
+    doc.text(`TOTAL A COBRAR: $${totalMonto.toLocaleString('es-AR',{minimumFractionDigits:2})}`,15,y+6);
+    y+=6;
+  }
+
+  y+=8;
+  doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(100);
+  doc.text(`Salida y regreso: ${deposito.formatted}`,15,y);
+
+  doc.setFontSize(7);doc.setTextColor(150);
+  doc.text('Red de Compras SAS · Sistema de Picking',15,290);
+
+  doc.save(`hoja_ruta_${m.num}_${z.nombre.replace(/\s+/g,'_')}.pdf`);
 }
 
 // ══ UTIL ══
