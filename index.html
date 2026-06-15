@@ -1642,6 +1642,9 @@ async function geocode(address,cacheKey){
   if(!json.length)throw new Error('No se encontró la dirección');
 
   const result={lat:parseFloat(json[0].lat),lng:parseFloat(json[0].lon),formatted:json[0].display_name};
+  if(isNaN(result.lat)||isNaN(result.lng)){
+    throw new Error('Nominatim devolvió coordenadas inválidas para esta dirección');
+  }
   if(cacheKey){
     cm[cacheKey]=result;
     saveCoordMaestro(cm);
@@ -2082,9 +2085,20 @@ function centroide(puntos){
 
 // Calcula ruta óptima (orden + distancias) para un set de paradas usando OSRM Trip API
 async function calcularRutaOSRM(deposito,paradas){
+  // Validar que todas las coordenadas (depósito + paradas) sean números válidos
+  const todos=[{nombre:'Depósito',...deposito},...paradas];
+  for(const p of todos){
+    if(typeof p.lat!=='number'||typeof p.lng!=='number'||isNaN(p.lat)||isNaN(p.lng)){
+      throw new Error(`Coordenadas inválidas para "${p.cliente||p.nombre||'punto desconocido'}". Revisá su dirección o coordenadas manuales.`);
+    }
+  }
+
+  // toFixed evita notación científica (ej: 1e-7) que OSRM no acepta
+  const lngLat=p=>`${p.lng.toFixed(6)},${p.lat.toFixed(6)}`;
+
   if(paradas.length===1){
     // Una sola parada: ida y vuelta directa, sin necesidad de optimizar orden
-    const coordsList=`${deposito.lng},${deposito.lat};${paradas[0].lng},${paradas[0].lat}`;
+    const coordsList=`${lngLat(deposito)};${lngLat(paradas[0])}`;
     const url=`${OSRM_URL}${coordsList}?roundtrip=true&source=first&destination=first&overview=full&geometries=geojson`;
     const res=await fetch(url);
     const json=await res.json();
@@ -2099,7 +2113,7 @@ async function calcularRutaOSRM(deposito,paradas){
     };
   }
 
-  const coordsList=[deposito,...paradas].map(p=>`${p.lng},${p.lat}`).join(';');
+  const coordsList=[deposito,...paradas].map(lngLat).join(';');
   const url=`${OSRM_URL}${coordsList}?roundtrip=true&source=first&destination=first&overview=full&geometries=geojson`;
   const res=await fetch(url);
   const json=await res.json();
