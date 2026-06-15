@@ -2117,7 +2117,12 @@ async function calcularRutaOSRM(deposito,paradas){
   const url=`${OSRM_URL}${coordsList}?roundtrip=true&source=first&destination=first&overview=full&geometries=geojson`;
   const res=await fetch(url);
   const json=await res.json();
-  if(json.code!=='Ok')throw new Error(json.message||'Error al calcular la ruta con OSRM');
+  if(json.code!=='Ok'){
+    // Log detallado para diagnóstico: URL completa + lista de puntos con sus coordenadas
+    console.error('OSRM error. URL:',url);
+    console.error('Puntos enviados:',[{nombre:'Depósito',lat:deposito.lat,lng:deposito.lng},...paradas.map(p=>({nombre:p.cliente,lat:p.lat,lng:p.lng}))]);
+    throw new Error((json.message||'Error al calcular la ruta con OSRM')+' — revisá la consola del navegador para más detalle (F12).');
+  }
 
   const trip=json.trips[0];
   const waypoints=json.waypoints;
