@@ -935,6 +935,7 @@ function clearFile(){
 
 // ══ NAVEGACIÓN ══
 function goStep(n){
+  let dataChanged=false;
   if(n>=2){
     const d=buildData();
     if(!d.length){showAlert('p1alert','❌ No se encontraron productos. Verificá las columnas.','err');return;}
@@ -943,6 +944,7 @@ function goStep(n){
       data=d;
       // Auto-cargar asignaciones
       data.forEach(r=>{r.pasillo_num=resolveNum(r);});
+      dataChanged=true;
     }
     saveMeta();
   }
@@ -960,7 +962,18 @@ function goStep(n){
     else if(i+1<n)s.classList.add('done');
   });
   updateTopChip();
-  if(n===2){initReparto();renderClienteAddrList();document.getElementById('zonasResult').innerHTML='';document.getElementById('zonasMsg').innerHTML='';zonasState=null;}
+  if(n===2){
+    initReparto();renderClienteAddrList();
+    // Solo resetear zonas/rutas si es un picking nuevo (data cambió).
+    // Si volvés a este paso con el mismo picking, conserva las zonas y rutas calculadas.
+    if(dataChanged||!zonasState){
+      document.getElementById('zonasResult').innerHTML='';
+      document.getElementById('zonasMsg').innerHTML='';
+      zonasState=null;
+    }else{
+      renderZonas(); // re-renderizar zonas existentes (incluye rutas calculadas)
+    }
+  }
   if(n===3){renderPEditor();renderRulesEditor();}
   if(n===4){renderAssign('');}
   if(n===5){renderPickingOutput();}
@@ -1229,10 +1242,10 @@ function renderPickingOutput(){
         const esPrimera=ri===0;
         bodyHtml+=`<tr id="row_${rid}" class="${esPrimera?'prod-first':''}">
           <td style="text-align:center"><input type="checkbox" id="${rid}" style="width:16px;height:16px;cursor:pointer;accent-color:${p.color}" onchange="tick('${rid}')"></td>
-          <td style="font-size:12px;color:var(--tg)">${esPrimera?esc(r.codigo):''}</td>
-          <td>${esPrimera?esc(g.descripcion):''}</td>
-          <td style="font-size:12px;color:var(--tg)">👤 ${esc(r.cliente||'—')}${badge}</td>
+          <td style="text-align:center;font-weight:700;color:${p.color}">P${p.num}</td>
           <td style="text-align:center;font-weight:700;font-size:14px">${r.cantidad}</td>
+          <td>${esc(g.descripcion)}</td>
+          <td style="font-size:12px;color:var(--tg)">👤 ${esc(r.cliente||'—')}${badge}</td>
         </tr>`;
       });
     });
@@ -1244,16 +1257,16 @@ function renderPickingOutput(){
       </div>
       <table><thead><tr>
         <th style="width:34px;text-align:center">✓</th>
-        <th style="width:70px">Código</th>
-        <th>Descripción</th>
+        <th style="width:50px;text-align:center">Pasillo</th>
+        <th style="width:60px;text-align:center">Cant.</th>
+        <th>Producto</th>
         <th style="width:160px">Cliente</th>
-        <th style="width:75px;text-align:center">Cant.</th>
       </tr></thead><tbody>
       ${bodyHtml}
       </tbody>
       <tfoot><tr>
-        <td colspan="4" style="text-align:right;background:${p.color}20;color:${p.color};font-weight:700;padding:7px 11px">Subtotal ${esc(p.nombre)}</td>
-        <td style="text-align:center;background:${p.color}20;color:${p.color};font-weight:700;font-size:14px;padding:7px 11px">${sub}</td>
+        <td colspan="3" style="text-align:right;background:${p.color}20;color:${p.color};font-weight:700;padding:7px 11px">Subtotal ${esc(p.nombre)}</td>
+        <td style="text-align:center;background:${p.color}20;color:${p.color};font-weight:700;font-size:14px;padding:7px 11px" colspan="2">${sub}</td>
       </tr></tfoot>
       </table></div>`;
   });
@@ -1311,19 +1324,19 @@ function renderExport(){
       📦 ${esc(p.nombre)} — ${items.length} ítems · ${sub} uds.</div>
     <table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead><tr style="background:${p.color}">
-        <th style="padding:5px 10px;color:#fff;width:70px;text-align:center">Código</th>
-        <th style="padding:5px 10px;color:#fff">Descripción</th>
-        <th style="padding:5px 10px;color:#fff;width:120px">Cliente</th>
-        <th style="padding:5px 10px;color:#fff;width:65px;text-align:center">Cant.</th>
+        <th style="padding:5px 10px;color:#fff;width:45px;text-align:center">Pasillo</th>
+        <th style="padding:5px 10px;color:#fff;width:55px;text-align:center">Cant.</th>
+        <th style="padding:5px 10px;color:#fff">Producto</th>
+        <th style="padding:5px 10px;color:#fff;width:140px">Cliente</th>
       </tr></thead><tbody>
       ${grupos.map(g=>g.rows.map((r,i)=>{
         const ord=getOrdenClientes()?.[r.cliente];
         const paradaTxt=ord?` <span style="opacity:.65">(Parada ${ord.paradaNum})</span>`:'';
         return`<tr style="background:${i%2?'#fff':p.color+'0d'}">
-          <td style="padding:6px 10px;text-align:center;color:var(--tg)">${i===0?esc(r.codigo):''}</td>
-          <td style="padding:6px 10px${i===0?';font-weight:600':''}">${i===0?esc(g.descripcion):''}</td>
-          <td style="padding:6px 10px;font-size:11px;color:var(--tg)">👤 ${esc(r.cliente||'—')}${paradaTxt}</td>
+          <td style="padding:6px 10px;text-align:center;color:var(--tg);font-weight:700">P${p.num}</td>
           <td style="padding:6px 10px;text-align:center;font-weight:700">${r.cantidad}</td>
+          <td style="padding:6px 10px">${esc(g.descripcion)}</td>
+          <td style="padding:6px 10px;font-size:11px;color:var(--tg)">👤 ${esc(r.cliente||'—')}${paradaTxt}</td>
         </tr>`;
       }).join('')).join('')}</tbody></table>`;
   });
@@ -1407,7 +1420,8 @@ function exportPDF(){
     doc.text(`P${p.num} — ${p.nombre.replace(/^Pasillo \d+ — /,'')}  ·  ${grupos.length} prod. · ${sub} uds.`,13,y+4.2);
     y+=7;
 
-    // Armar body: una fila por (producto, cliente). Código/descripción solo en la primera fila del grupo.
+    // Armar body: una fila por (producto, cliente). Orden: Pasillo · Cantidad · Producto · Cliente
+    // La descripción del producto se repite en cada fila (no se deja en blanco).
     const body=[];
     const firstRowsOfGroup=new Set(); // índices de body que son "primera fila" de su producto
     grupos.forEach(g=>{
@@ -1416,10 +1430,9 @@ function exportPDF(){
         const ord=getOrdenClientes()?.[r.cliente];
         const clienteTxt=`${r.cliente||m.suc}${ord?` (P${ord.paradaNum})`:''}`;
         body.push([
-          ri===0?`P${p.num}`:'',
-          ri===0?r.codigo:'',
-          ri===0?g.descripcion:'',
+          `P${p.num}`,
           r.cantidad,
+          g.descripcion,
           clienteTxt
         ]);
       });
@@ -1435,10 +1448,9 @@ function exportPDF(){
       alternateRowStyles:{fillColor:[248,249,250]},
       columnStyles:{
         0:{cellWidth:13,halign:'center'},
-        1:{cellWidth:14,halign:'center'},
+        1:{cellWidth:14,halign:'center',fontStyle:'bold'},
         2:{cellWidth:'auto'},
-        3:{cellWidth:13,halign:'center',fontStyle:'bold'},
-        4:{cellWidth:32}
+        3:{cellWidth:42}
       },
       didParseCell:(d)=>{
         // Línea superior más marcada cuando empieza un nuevo producto
@@ -1765,6 +1777,8 @@ function renderZonas(){
   document.getElementById('zonasResult').innerHTML=html;
   setupDragDrop();
   loadLeaflet(()=>renderMapaZonas());
+  // Si ya había rutas calculadas (al volver a este paso), mostrarlas de nuevo
+  if(zonas.some(z=>z.ruta))renderRutasResult();
 }
 
 // ══ MONTO / FORMA DE PAGO POR CLIENTE (maestro persistente) ══
@@ -2094,9 +2108,11 @@ function getZonaInfoCliente(cliente){
 
 // ══ EXPORT HOJA DE RUTA PDF (por zona/chofer) ══
 function exportRutaPDF(zi){
-  if(!zonasState)return;
+  if(!zonasState||!zonasState.zonas[zi]||!zonasState.zonas[zi].ruta){
+    alert('No hay una ruta calculada para esta zona. Presioná "Calcular rutas de todas las zonas" primero.');
+    return;
+  }
   const z=zonasState.zonas[zi];
-  if(!z||!z.ruta)return;
   const {deposito}=zonasState;
   const {order}=z.ruta;
   const paradas=z.clientes;
