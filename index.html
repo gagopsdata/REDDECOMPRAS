@@ -110,6 +110,12 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
 .block-banner{background:#FDEDEC;border:2px solid #E74C3C;border-radius:9px;padding:1rem 1.2rem;display:flex;align-items:center;gap:10px;font-size:13px;color:#922B21;font-weight:600;margin-bottom:1rem}
 /* ZONAS / CHOFERES */
 .zona-card{border-radius:10px;border:2px solid var(--bd);box-shadow:var(--sh);margin-bottom:1.1rem;overflow:hidden}
+.opciones-veh{display:flex;gap:1rem;flex-wrap:wrap;margin-top:.75rem}
+.opcion-veh{flex:1;min-width:160px;border:2px solid var(--bd);border-radius:10px;padding:1rem;text-align:center;display:flex;flex-direction:column;gap:.6rem}
+.opcion-veh.opcion-excede{border-color:#E74C3C;background:#FDEDEC}
+.opcion-veh-hdr{font-size:1.3rem;font-weight:800;color:var(--rojo)}
+.opcion-veh.opcion-excede .opcion-veh-hdr{color:#922B21}
+.opcion-veh-body{font-size:13px;color:var(--tg);display:flex;flex-direction:column;gap:.25rem}
 .zona-hdr{padding:.7rem 1rem;display:flex;align-items:center;gap:10px;color:#fff;flex-wrap:wrap}
 .zona-hdr input{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:6px;padding:5px 10px;font-size:13px;font-weight:700;font-family:inherit;outline:none;flex:1;min-width:90px;max-width:180px}
 .zona-hdr input::placeholder{color:rgba(255,255,255,.7)}
@@ -975,12 +981,18 @@ function goStep(n){
     initReparto();renderClienteAddrList();
     // Solo resetear zonas/rutas si es un picking nuevo (data cambió).
     // Si volvés a este paso con el mismo picking, conserva las zonas y rutas calculadas.
-    if(dataChanged||!zonasState){
+    if(dataChanged){
       document.getElementById('zonasResult').innerHTML='';
       document.getElementById('zonasMsg').innerHTML='';
       zonasState=null;
-    }else{
+      pendingZonaCandidatos=null;
+    }else if(zonasState){
       renderZonas(); // re-renderizar zonas existentes (incluye rutas calculadas)
+    }else if(pendingZonaCandidatos){
+      renderOpcionesVehiculos(); // todavía no eligió cuántos vehículos usar
+    }else{
+      document.getElementById('zonasResult').innerHTML='';
+      document.getElementById('zonasMsg').innerHTML='';
     }
   }
   if(n===3){renderPEditor();renderRulesEditor();}
@@ -1683,30 +1695,33 @@ async function armarZonas(){
       }
     }
 
-    showMsg('zonasMsg','⏳ Agrupando por zonas geográficas...','info');
+    showMsg('zonasMsg','⏳ Calculando opciones de reparto...','info');
 
-    // Determinar K (1-4) según cantidad de puntos: ~1 zona cada 6-8 paradas, máx 4
-    let k=Math.min(4,Math.max(1,Math.ceil(puntos.length/7)));
-    if(puntos.length<=3)k=1;
+    // ── Calcular candidatos: siempre 1 y 2 vehículos; 3 y 4 solo si 2 no entra en 8h ──
+    // Cada candidato = {k, clusters, rutas, todasEntran, tiempoMax}
+    const candidatos=[];
+    let maxKaProbar=2;
+    for(let k=1;k<=Math.min(4,puntos.length);k++){
+      if(k>maxKaProbar)break;
+      const clusters=kmeans(puntos,k);
+      const rutas=[];
+      let todasEntran=true,tiempoMax=0;
+      for(const pts of clusters){
+        if(!pts.length){rutas.push(null);continue;}
+        const ruta=await calcularRutaOSRM(depGeo,pts);
+        rutas.push(ruta);
+        const t=tiempoTotalRuta(ruta,pts.length);
+        tiempoMax=Math.max(tiempoMax,t);
+        if(t>TIEMPO_MAX_MIN)todasEntran=false;
+      }
+      candidatos.push({k,clusters,rutas,todasEntran,tiempoMax});
+      // Si k=2 (o cualquier k>=2) no entra en 8h, seguir probando hasta 4
+      if(k>=2&&!todasEntran&&k<Math.min(4,puntos.length))maxKaProbar=k+1;
+    }
 
-    const clusters=kmeans(puntos,k);
-
-    // Cargar nombres de chofer y etiquetas de zona guardados o defaults
-    const savedNombres=getZonaNombres();
-    const savedEtiquetas=getZonaEtiquetas();
-    zonasState={
-      deposito:{...depGeo,nombre:'Depósito'},
-      zonas:clusters.map((pts,i)=>({
-        nombre:savedNombres[i]||ZONA_NOMBRES_DEFAULT[i],
-        etiqueta:savedEtiquetas[i]||ZONA_ETIQUETAS_DEFAULT[i],
-        color:ZONA_COLORS[i],
-        clientes:pts,
-        ruta:null // se calcula al render
-      }))
-    };
-
-    showMsg('zonasMsg',`✅ ${zonasState.zonas.length} zona${zonasState.zonas.length!==1?'s':''} propuesta${zonasState.zonas.length!==1?'s':''}. Podés arrastrar clientes entre zonas y luego calcular las rutas.`,'ok');
-    renderZonas();
+    // Guardar info para que el usuario elija
+    pendingZonaCandidatos={depGeo,puntos,candidatos};
+    renderOpcionesVehiculos();
 
   }catch(err){
     console.error(err);
@@ -1714,6 +1729,64 @@ async function armarZonas(){
   }finally{
     document.getElementById('btnArmarZonas').disabled=false;
   }
+}
+
+let pendingZonaCandidatos=null;
+
+function renderOpcionesVehiculos(){
+  if(!pendingZonaCandidatos)return;
+  const {candidatos}=pendingZonaCandidatos;
+
+  let html=`<div class="card"><div class="ct">¿Cuántos vehículos usar?</div>
+    <div class="alert a-info">💡 Menos vehículos significa menos costos, pero el/los choferes vuelven más tarde. Elegí según tu operación del día.</div>
+    <div class="opciones-veh">`;
+
+  candidatos.forEach(c=>{
+    const zonasConClientes=c.clusters.filter(pts=>pts.length);
+    const paradasTxt=zonasConClientes.map(pts=>pts.length).join(' + ');
+    const horas=Math.floor(c.tiempoMax/60),mins=Math.round(c.tiempoMax%60);
+    const excedeClass=c.todasEntran?'':' opcion-excede';
+    html+=`<div class="opcion-veh${excedeClass}">
+      <div class="opcion-veh-hdr">${c.k} vehículo${c.k!==1?'s':''}</div>
+      <div class="opcion-veh-body">
+        <div>📍 ${paradasTxt} parada${zonasConClientes.reduce((s,p)=>s+p.length,0)!==1?'s':''}</div>
+        <div>⏱️ hasta ${horas}h ${mins}min${c.todasEntran?'':' ⚠️ supera 8h'}</div>
+      </div>
+      <button class="btn btn-r btn-sm" onclick="elegirOpcionVehiculos(${c.k})">Usar esta opción</button>
+    </div>`;
+  });
+
+  html+=`</div></div>`;
+  document.getElementById('zonasResult').innerHTML=html;
+  showMsg('zonasMsg','','');
+}
+
+function elegirOpcionVehiculos(k){
+  if(!pendingZonaCandidatos)return;
+  const {depGeo,candidatos}=pendingZonaCandidatos;
+  const elegido=candidatos.find(c=>c.k===k);
+  if(!elegido)return;
+
+  const clusters=elegido.clusters;
+  const rutas=elegido.rutas;
+
+  // Cargar nombres de chofer y etiquetas de zona guardados o defaults
+  const savedNombres=getZonaNombres();
+  const savedEtiquetas=getZonaEtiquetas();
+  zonasState={
+    deposito:{...depGeo,nombre:'Depósito'},
+    zonas:clusters.map((pts,i)=>({
+      nombre:savedNombres[i]||ZONA_NOMBRES_DEFAULT[i],
+      etiqueta:savedEtiquetas[i]||ZONA_ETIQUETAS_DEFAULT[i],
+      color:ZONA_COLORS[i],
+      clientes:pts,
+      ruta:rutas[i]||null // ya calculada
+    }))
+  };
+
+  const nVeh=zonasState.zonas.filter(z=>z.clientes.length).length;
+  showMsg('zonasMsg',`✅ ${nVeh} vehículo${nVeh!==1?'s':''} seleccionado${nVeh!==1?'s':''}. Podés arrastrar clientes entre zonas y recalcular si hace falta.`,'ok');
+  renderZonas();
 }
 
 // ══ K-MEANS simple sobre lat/lng ══
@@ -1908,13 +1981,18 @@ function renderMapaZonas(){
 }
 
 // ══ CALCULAR RUTA POR ZONA (OSRM Trip API) ══
-// ══ Límite de jornada: tiempo total (viaje + 10min por parada) <= 270 min (4h30) ══
-const TIEMPO_MAX_MIN=270;
+// ══ Límite de jornada: tiempo total (viaje + 10min por parada) <= 480 min (8h) ══
+const TIEMPO_MAX_MIN=480;
 const TIEMPO_POR_PARADA_MIN=10;
 
 function tiempoTotalZona(z){
   if(!z.ruta)return 0;
   return z.ruta.totalMin + z.clientes.length*TIEMPO_POR_PARADA_MIN;
+}
+
+// Tiempo total estimado para un conjunto de paradas (ruta + objeto), dado un objeto ruta ya calculado
+function tiempoTotalRuta(ruta,nParadas){
+  return ruta.totalMin + nParadas*TIEMPO_POR_PARADA_MIN;
 }
 
 async function calcularRutasZonas(){
@@ -1929,7 +2007,7 @@ async function calcularRutasZonas(){
       z.ruta=await calcularRutaOSRM(zonasState.deposito,z.clientes);
     }
 
-    // ── Rebalanceo: si alguna zona supera 4h30, mover su parada más
+    // ── Rebalanceo: si alguna zona supera 8h, mover su parada más
     //    conveniente a la zona con más margen disponible ──
     let moved=0;
     const MAX_ITER=12;
@@ -1978,13 +2056,13 @@ async function calcularRutasZonas(){
     const excedidas=zonasState.zonas.filter(z=>z.clientes.length&&tiempoTotalZona(z)>TIEMPO_MAX_MIN);
 
     if(moved>0){
-      showMsg('rutasMsg',`✅ Rutas calculadas. Se reasignaron ${moved} parada${moved!==1?'s':''} entre zonas para respetar el límite de 4h30.`,'ok');
+      showMsg('rutasMsg',`✅ Rutas calculadas. Se reasignaron ${moved} parada${moved!==1?'s':''} entre zonas para respetar el límite de 8h.`,'ok');
     }else{
       showMsg('rutasMsg','✅ Rutas calculadas para todas las zonas.','ok');
     }
     if(excedidas.length){
       const nombres=excedidas.map(z=>z.nombre).join(', ');
-      showMsg('rutasMsg',`⚠️ ${nombres}: no se pudo bajar de 4h30 (quedó${excedidas.length>1?'on':''} con muy pocas paradas para repartir más). Revisá manualmente.`,'warn');
+      showMsg('rutasMsg',`⚠️ ${nombres}: no se pudo bajar de 8h (quedó${excedidas.length>1?'on':''} con muy pocas paradas para repartir más). Revisá manualmente.`,'warn');
     }
     renderRutasResult();
   }catch(err){
@@ -2066,7 +2144,7 @@ function renderRutasResult(){
         <div class="ruta-chip"><strong>${totalKm.toFixed(1)}</strong> km</div>
         <div class="ruta-chip"><strong>${Math.round(totalMin)}</strong> min viaje</div>
         <div class="ruta-chip" style="${excedido?'border-color:#E74C3C;background:#FDEDEC;color:#922B21':''}">
-          <strong>${horas}h ${mins}min</strong> total (con 10min/parada)${excedido?' ⚠️ supera 4h30':''}
+          <strong>${horas}h ${mins}min</strong> total (con 10min/parada)${excedido?' ⚠️ supera 8h':''}
         </div>
       </div>`;
 
