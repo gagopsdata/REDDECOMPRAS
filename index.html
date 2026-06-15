@@ -548,6 +548,11 @@ async function processPDF(f){
       fullText+=tc.items.map(i=>i.str).join(' ')+'\n';
     }
 
+    // ── Detectar formato: "Informe de Entrega" trae cliente + dirección + monto ──
+    if(/Informe de Entrega/i.test(fullText)&&/Saldo Nota de Venta/i.test(fullText)){
+      return processPDF_InformeEntrega(f,pdf,allItems,fullText);
+    }
+
     autoDetectPDFMeta(fullText);
 
     // Layout Red de Compras (coordenadas X reales del PDF):
@@ -617,6 +622,144 @@ async function processPDF(f){
     console.error(err);
     showAlert('p1alert','❌ Error: '+err.message,'err');
   }
+}
+
+// ══ PARSER: "Informe de Entrega" — trae cliente, domicilio, productos y Saldo Nota de Venta (monto) ══
+function processPDF_InformeEntrega(f,pdf,allItems,fullText){
+  // Metadatos: número de entrega, sucursal, fecha
+  const numMatch=fullText.match(/N[uú]mero de entrega:?\s*([A-Z]{2}\d{6,12})/i);
+  if(numMatch)document.getElementById('m-num').value=numMatch[1];
+  const sucMatch=fullText.match(/Sucursal:\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ]+?)(?:\s+Tel[eé]fono|$)/im);
+  if(sucMatch)document.getElementById('m-suc').value=sucMatch[1].trim();
+  const choMatch=fullText.match(/Flete Propio:?\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ]+?)(?:\s+Volumen|$)/im);
+  if(choMatch)document.getElementById('m-cho').value=choMatch[1].trim();
+  const fecMatch=fullText.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(fecMatch){
+    const[,d,mo,y]=fecMatch;
+    document.getElementById('m-fec').value=`${y}-${mo.padStart(2,'0')}-${d.padStart(2,'0')}`;
+  }
+
+  // Reconstruir líneas agrupando items por posición Y (bucket de 4px), ordenando por X
+  const rowMap={};
+  allItems.forEach(item=>{
+    const key=item.page*100000+Math.round(item.y/4)*4;
+    if(!rowMap[key])rowMap[key]={y:item.y,page:item.page,items:[]};
+    rowMap[key].items.push(item);
+  });
+  const sortedRows=Object.values(rowMap).sort((a,b)=>a.page-b.page||a.y-b.y);
+  const allLines=sortedRows.map(r=>r.items.sort((a,b)=>a.x-b.x).map(i=>i.str).join(' ').trim());
+
+  // Limpiar líneas de pie/encabezado que no aportan datos y romperían la asociación cliente↔producto
+  const FOOTER_RE=/^(Observaciones:|Emitido:|Informe de Entrega|Sucursal:|CUIT:|Red de Compras|Flete)/i;
+  const lines=allLines.filter(l=>l&&!FOOTER_RE.test(l));
+
+  const CLIENTE_RE  =/^Cliente:\s*(.+?)\s+Importe Recibido$/;
+  const DOMICILIO_RE=/^Domicilio:\s*(.+?)\s+Firma$/;
+  const SALDO_RE    =/^R[ée]mito N[uú]mero:.*Saldo Nota de Venta:\s*\$\s*([\d.,]+)\s*$/;
+  const PRODUCTO_RE =/^(\d+,\d{2})\s+(.+)$/;
+
+  const clientes=[];
+  let current=null;
+  let i=0;
+  while(i<lines.length){
+    const l=lines[i];
+
+    let m=l.match(CLIENTE_RE);
+    if(m){
+      if(current)clientes.push(current);
+      current={cliente:m[1].trim(),domicilio:'',monto:0,productos:[]};
+      i++;continue;
+    }
+
+    m=l.match(DOMICILIO_RE);
+    if(m&&current){
+      let addr=m[1].trim();
+      // Direcciones largas se cortan en dos líneas; la siguiente es continuación
+      // si no matchea ningún patrón conocido
+      const nxt=lines[i+1];
+      if(nxt&&!/^(R[ée]mito N[uú]mero:|Cliente:|Cantidad)/.test(nxt)){
+        addr+=' '+nxt.trim();
+        i++;
+      }
+      current.domicilio=addr;
+      i++;continue;
+    }
+
+    m=l.match(SALDO_RE);
+    if(m&&current){
+      current.monto=parseFloat(m[1].replace(/\./g,'').replace(',','.'));
+      i++;continue;
+    }
+
+    m=l.match(PRODUCTO_RE);
+    if(m&&current){
+      const cantidad=parseFloat(m[1].replace(',','.'));
+      const descripcion=m[2].trim();
+      if(cantidad>0&&descripcion)current.productos.push({cantidad,descripcion});
+      i++;continue;
+    }
+
+    i++;
+  }
+  if(current)clientes.push(current);
+
+  if(!clientes.length){
+    showAlert('p1alert','⚠️ No se encontraron clientes en el Informe de Entrega.','warn');
+    return;
+  }
+
+  // Nota: este formato no trae código de producto, solo descripción.
+  // La asignación de pasillo (resolveNum) ya contempla resolución por descripción
+  // como nivel 2 (maestro aprendido) y nivel 4 (base hardcodeada), por lo que
+  // funciona igual sin código — aunque el aprendizaje por código no aplicará
+  // para estos productos hasta que aparezcan en un picking con código.
+
+  // Armar filas: una por producto, con cliente/dirección/monto asociados
+  const results=[];
+  let totalUds=0;
+  clientes.forEach(c=>{
+    c.productos.forEach(p=>{
+      results.push({
+        codigo:'', // este formato no trae código; se asigna pasillo por descripción
+        descripcion:p.descripcion,
+        cantidad:p.cantidad,
+        cliente:c.cliente
+      });
+      totalUds+=p.cantidad;
+    });
+  });
+
+  // Precargar direcciones y montos en los maestros persistentes
+  const addrMaestro=getAddrMaestro();
+  const pagoMaestro=getPagoMaestro();
+  clientes.forEach(c=>{
+    if(c.domicilio&&!addrMaestro[c.cliente]){
+      addrMaestro[c.cliente]=c.domicilio;
+    }
+    if(!pagoMaestro[c.cliente])pagoMaestro[c.cliente]={};
+    pagoMaestro[c.cliente].monto=c.monto;
+    if(!pagoMaestro[c.cliente].formaPago)pagoMaestro[c.cliente].formaPago='efectivo';
+  });
+  saveAddrMaestro(addrMaestro);
+  savePagoMaestro(pagoMaestro);
+
+  rawHeaders=['Código','Descripción','Cantidad','Cliente'];
+  rawRows=results.map(r=>[r.codigo,r.descripcion,r.cantidad,r.cliente]);
+  colCod=0;colDesc=1;colCant=2;colCliente=3;
+
+  document.getElementById('fchip').innerHTML=`
+    <div class="fchip"><span class="ico">📄</span>
+      <div>
+        <div class="nm">${f.name}</div>
+        <div class="mt">PDF (Informe de Entrega) · ${pdf.numPages} página${pdf.numPages>1?'s':''} · ${(f.size/1024).toFixed(1)} KB · <strong>${clientes.length} clientes · ${results.length} productos · ${totalUds} uds.</strong></div>
+      </div>
+      <button class="rm" onclick="clearFile()">✕</button>
+    </div>`;
+
+  document.getElementById('cardCols').style.display='none';
+  document.getElementById('cardMeta').style.display='block';
+  document.getElementById('btnN1').disabled=false;
+  showAlert('p1alert',`✅ ${clientes.length} clientes, ${results.length} productos (${totalUds} uds.). Direcciones y montos precargados para el paso 2.`,'ok');
 }
 function autoDetectPDFMeta(text){
   // Número de picking: "Número:ER010000818" o "Número: ER010000818"
