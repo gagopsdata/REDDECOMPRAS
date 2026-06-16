@@ -150,6 +150,7 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
 .stop-input:focus{border-color:var(--rojo)}
 .stop-input.geo-ok{border-color:var(--verde);background:#EAFAF1}
 .stop-input.geo-err{border-color:#E74C3C;background:#FDEDEC}
+.stop-input.geo-warn{border-color:#E67E22;background:#FEF5E7}
 #mapaReparto{width:100%;height:340px;border-radius:9px;border:1px solid var(--bd);margin-top:1rem}
 .ruta-summary{display:flex;gap:.8rem;flex-wrap:wrap;margin-bottom:1rem}
 .ruta-chip{background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:.6rem 1rem;font-size:13px}
@@ -1580,7 +1581,7 @@ function onAddrChange(i,input){
   const m=getAddrMaestro();
   m[cl]=input.value.trim();
   saveAddrMaestro(m);
-  input.classList.remove('geo-ok','geo-err');
+  input.classList.remove('geo-ok','geo-err','geo-warn');
   // invalidar coordenada cacheada de este cliente (la dirección cambió)
   const cm=getCoordMaestro();delete cm[cl];saveCoordMaestro(cm);
 }
@@ -1641,14 +1642,26 @@ async function geocode(address,cacheKey){
   if(wait>0)await new Promise(r=>setTimeout(r,wait));
   _lastNominatimCall=Date.now();
 
-  const url=`${NOMINATIM_URL}?q=${encodeURIComponent(address+', Tucumán, Argentina')}&format=json&limit=1&countrycodes=ar`;
-  const res=await fetch(url,{headers:{'Accept':'application/json'}});
-  const json=await res.json();
-  if(!json.length)throw new Error('No se encontró la dirección');
+  // Bounding box de la provincia de Tucumán: minLng, minLat, maxLng, maxLat
+  // Coordenadas aprox: longitud -66.0 a -64.5, latitud -28.0 a -26.0
+  const TUCUMAN_VIEWBOX='-66.0,-28.0,-64.5,-26.0';
 
-  const result={lat:parseFloat(json[0].lat),lng:parseFloat(json[0].lon),formatted:json[0].display_name};
+  // Primera búsqueda: dentro de Tucumán (bounded=1, no sale de la provincia)
+  const urlBounded=`${NOMINATIM_URL}?q=${encodeURIComponent(address)}&format=json&limit=1&countrycodes=ar&viewbox=${TUCUMAN_VIEWBOX}&bounded=1`;
+  const resBounded=await fetch(urlBounded,{headers:{'Accept':'application/json'}});
+  const jsonBounded=await resBounded.json();
+
+  let resultData=null;
+  if(jsonBounded.length){
+    resultData=jsonBounded[0];
+  }else{
+    // No encontró nada en Tucumán — devolver null para indicar que la dirección no está en la provincia
+    return null;
+  }
+
+  const result={lat:parseFloat(resultData.lat),lng:parseFloat(resultData.lon),formatted:resultData.display_name};
   if(isNaN(result.lat)||isNaN(result.lng)){
-    throw new Error('Nominatim devolvió coordenadas inválidas para esta dirección');
+    return null;
   }
   if(cacheKey){
     cm[cacheKey]=result;
@@ -1687,20 +1700,36 @@ async function armarZonas(){
 
   try{
     const depGeo=await geocode(deposito,'__deposito__');
+    if(!depGeo)throw new Error('No se pudo ubicar el depósito en Tucumán. Verificá la dirección.');
+
+    // Centro de Tucumán como fallback para clientes sin dirección identificable en la provincia
+    const TUCUMAN_CENTER={lat:-26.8241,lng:-65.2226};
+    const sinUbicar=[];
 
     for(const p of puntos){
-      try{
-        // Si tiene coordenadas manuales, geocode las usa directo sin necesitar p.addr
-        const addrParaGeocode=p.addr||`(${p.cliente})`;
-        const g=await geocode(addrParaGeocode,p.cliente);
-        p.lat=g.lat;p.lng=g.lng;p.formatted=p.addr?g.formatted:`${p.cliente} (coordenadas manuales)`;
-        const input=document.querySelector(`[data-cliente="${p.cliente}"]`);
-        if(input)input.classList.add('geo-ok');
-      }catch(e){
-        const input=document.querySelector(`[data-cliente="${p.cliente}"]`);
-        if(input)input.classList.add('geo-err');
-        throw new Error(`No se pudo encontrar la dirección de "${p.cliente}": ${p.addr||'(sin dirección, sin coordenadas válidas)'}`);
+      // Si tiene coordenadas manuales, geocode las usa directo sin necesitar p.addr
+      const addrParaGeocode=p.addr||`(${p.cliente})`;
+      const g=await geocode(addrParaGeocode,p.cliente);
+      const input=document.querySelector(`[data-cliente="${p.cliente}"]`);
+
+      if(g){
+        p.lat=g.lat;p.lng=g.lng;
+        p.formatted=p.addr?g.formatted:`${p.cliente} (coordenadas manuales)`;
+        if(input)input.classList.remove('geo-err');input&&input.classList.add('geo-ok');
+      }else{
+        // No encontrado en Tucumán — usar centroide como fallback para clustering
+        // pero marcar como "sin dirección confirmada" para la hoja de ruta
+        p.lat=TUCUMAN_CENTER.lat+((Math.random()-0.5)*0.02); // pequeño offset para no apilar
+        p.lng=TUCUMAN_CENTER.lng+((Math.random()-0.5)*0.02);
+        p.formatted=''; // dirección vacía — se omite en la hoja de ruta
+        p.sinUbicar=true;
+        sinUbicar.push(p.cliente);
+        if(input){input.classList.remove('geo-ok');input.classList.add('geo-warn');}
       }
+    }
+
+    if(sinUbicar.length){
+      showMsg('zonasMsg',`⚠️ No se identificaron en Tucumán: ${sinUbicar.join(', ')}. Se incluyen en la hoja de ruta sin dirección. Agregá coordenadas manuales si querés ubicarlos en el mapa.`,'warn');
     }
 
     showMsg('zonasMsg','⏳ Calculando opciones de reparto...','info');
@@ -2255,7 +2284,7 @@ function exportRutaPDF(zi){
     body.push([
       String(i+1),
       p.cliente,
-      p.formatted,
+      p.formatted||'Sin dirección confirmada — consultá a administración',
       pago.monto?`$${pago.monto.toLocaleString('es-AR',{minimumFractionDigits:2})}`:'—',
       '','',''
     ]);
