@@ -50,6 +50,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--az
 .dz-ttl{font-size:16px;font-weight:600;color:var(--azul);margin-bottom:.25rem}
 .dz-sub{font-size:12px;color:var(--tg)}
 .fchip{display:flex;align-items:center;gap:11px;padding:.9rem 1.1rem;background:#EAFAF1;border:1px solid #A9DFBF;border-radius:9px;margin-top:.9rem}
+.drop-zone{border:2.5px dashed var(--bd);border-radius:12px;padding:2.5rem 1.5rem;text-align:center;cursor:pointer;transition:background .15s,border-color .15s;background:#FAFAFA}
+.drop-zone:hover,.drop-zone.dz-over{background:#F0F7FF;border-color:var(--rojo)}
 .fchip .ico{font-size:28px}.fchip .nm{font-weight:600;font-size:14px;color:#1E8449}
 .fchip .mt{font-size:12px;color:var(--tg);margin-top:1px}
 .fchip .rm{margin-left:auto;background:none;border:none;cursor:pointer;font-size:18px;color:#E74C3C;padding:3px 7px;border-radius:5px}
@@ -172,6 +174,7 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
   <button class="step" id="s3" onclick="goStep(3)"><span class="sn">3</span> Pasillos</button>
   <button class="step" id="s4" onclick="goStep(4)"><span class="sn">4</span> Asignar</button>
   <button class="step" id="s6" onclick="goStep(6)"><span class="sn">5</span> Exportar</button>
+  <button class="step" id="s7" onclick="goStep(7)" style="border-left:3px solid var(--verde);margin-left:.5rem"><span class="sn" style="background:var(--verde)">📦</span> Stock</button>
 </div>
 <div class="main">
 
@@ -340,6 +343,69 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
   </div>
 </div>
 
+<!-- ═══ MÓDULO STOCK ═══ -->
+<div class="panel" id="panel-7">
+  <div class="card">
+    <div class="ct">📦 Stock inicial</div>
+    <p style="font-size:13px;color:var(--tg);margin:0 0 .75rem">Subí tu Excel de stock con columnas: <strong>Producto · Cantidad · Precio Costo · Precio Venta</strong>. El sistema lo guarda y descuenta automáticamente cada picking que proceses.</p>
+    <div class="drop-zone" id="stockDropZone" onclick="document.getElementById('stockFileIn').click()"
+      ondragover="event.preventDefault();this.classList.add('dz-over')"
+      ondragleave="this.classList.remove('dz-over')"
+      ondrop="event.preventDefault();this.classList.remove('dz-over');handleStockFile(event.dataTransfer.files[0])">
+      <div style="font-size:2rem">📊</div>
+      <div style="font-weight:600;margin:.4rem 0">Arrastrá el Excel de stock acá o hacé clic</div>
+      <div style="font-size:12px;color:var(--tg)">.xlsx · .xls · .csv</div>
+    </div>
+    <input type="file" id="stockFileIn" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleStockFile(this.files[0])">
+    <div id="stockUploadMsg" style="margin-top:.5rem"></div>
+  </div>
+
+  <div class="card" id="stockStats" style="display:none">
+    <div class="toolbar" style="margin:0 0 .75rem;gap:.75rem;flex-wrap:wrap">
+      <div class="ct" style="margin:0;flex:1">📊 Dashboard de stock</div>
+      <input type="text" id="stockSearch" placeholder="🔍 Buscar producto..." oninput="renderStockTable()"
+        style="padding:7px 11px;border:1.5px solid var(--bd);border-radius:7px;font-size:13px;outline:none;width:220px">
+      <select id="stockFilter" onchange="renderStockTable()"
+        style="padding:7px 11px;border:1.5px solid var(--bd);border-radius:7px;font-size:13px;outline:none;background:#fff">
+        <option value="">Todos los productos</option>
+        <option value="A">Clase A (top 20%)</option>
+        <option value="B">Clase B (siguiente 30%)</option>
+        <option value="C">Clase C (resto 50%)</option>
+        <option value="cero">Stock en cero</option>
+        <option value="bajo">Stock bajo (≤5)</option>
+        <option value="sinmov">Sin movimiento</option>
+      </select>
+      <button class="btn btn-v" onclick="exportStockExcel()" style="padding:7px 14px;font-size:13px">📊 Exportar Excel</button>
+    </div>
+    <div id="stockMetrics" style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem"></div>
+    <div style="overflow-x:auto"><table id="stockTable" style="width:100%;border-collapse:collapse;font-size:12.5px"></table></div>
+  </div>
+
+  <div class="card" id="stockHistCard" style="display:none">
+    <div class="ct">📋 Movimientos registrados</div>
+    <div id="stockHist" style="font-size:12px;max-height:220px;overflow-y:auto"></div>
+  </div>
+
+  <div class="card">
+    <div class="ct">💾 Backup del sistema</div>
+    <p style="font-size:13px;color:var(--tg);margin:0 0 1rem">Guardá el estado completo (stock, movimientos, direcciones, pasillos aprendidos, coordenadas, montos) en un archivo JSON. Guardalo en Google Drive para tenerlo disponible en cualquier computadora.</p>
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+      <button class="btn btn-v" onclick="exportarEstado()" style="flex:1;min-width:180px">
+        💾 Guardar estado completo<small style="display:block;font-size:11px;font-weight:400;opacity:.8">Descarga un archivo .json</small>
+      </button>
+      <button class="btn btn-b" onclick="document.getElementById('importEstadoIn').click()" style="flex:1;min-width:180px">
+        📂 Cargar estado guardado<small style="display:block;font-size:11px;font-weight:400;opacity:.8">Restaura desde un .json</small>
+      </button>
+      <input type="file" id="importEstadoIn" accept=".json" style="display:none" onchange="importarEstado(this.files[0])">
+    </div>
+    <div id="backupMsg" style="margin-top:.5rem"></div>
+  </div>
+
+  <div class="nav">
+    <button class="btn btn-r" onclick="if(confirm('¿Resetear todo el stock? Se perderán los datos cargados.'))resetStock()">🗑️ Resetear stock</button>
+  </div>
+</div>
+
 </div><!-- /main -->
 <script>
 // ══════════════════════════════════════════════════════════════════
@@ -499,6 +565,8 @@ function confirmar(){
   document.getElementById('btnPicking').disabled=false;
   const st=getMaestroStats();
   showMsg('p4msg',`✅ Asignación confirmada. Maestro: ${st.total} productos aprendidos (${st.byCod} por código, ${st.byDesc} por descripción).`,'ok');
+  // Descontar este picking del stock (si hay stock cargado)
+  descontarPickingDeStock(data, getMeta().num||'picking');
   setTimeout(()=>goStep(4),700);
 }
 
@@ -979,10 +1047,12 @@ function goStep(n){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+n).classList.add('active');
   updateTopChip();
-  // Mapeo paso interno -> posición visual en la nav (5 botones: 1,2,3,4,6→5)
+  // Mapeo paso interno -> posición visual en la nav (5 botones de flujo: 1,2,3,4,6→5; s7=Stock es independiente)
   const visualPos=n===6?5:n;
   document.querySelectorAll('.step').forEach((s,i)=>{
+    if(s.id==='s7'){s.classList.toggle('active',n===7);return;} // Stock: activo solo cuando está en panel-7
     s.classList.remove('active','done');
+    if(n===7)return; // en panel-7 no marcar los pasos del flujo
     if(i+1===visualPos)s.classList.add('active');
     else if(i+1<visualPos)s.classList.add('done');
   });
@@ -1007,6 +1077,7 @@ function goStep(n){
   if(n===3){renderPEditor();renderRulesEditor();}
   if(n===4){renderAssign('');}
   if(n===5){renderPickingOutput();}
+  if(n===7){renderStockDashboard();}
   if(n===6){renderExport();}
 }
 function updateTopChip(){
@@ -2340,7 +2411,7 @@ function exportRutaPDF(zi){
   const deudores=order
     .map(origIdx=>paradas[origIdx])
     .map(p=>({cliente:p.cliente,saldo:getPagoCliente(p.cliente).saldoCtaCte||0}))
-    .filter(d=>d.saldo>0);
+    .filter(d=>d.saldo>=100);
 
   if(deudores.length){
     if(y>265){doc.addPage();y=15;}
@@ -2372,6 +2443,288 @@ function exportRutaPDF(zi){
   doc.text('Red de Compras SAS · Sistema de Picking',15,290);
 
   doc.save(`hoja_ruta_${m.num}_${z.nombre.replace(/\s+/g,'_')}.pdf`);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MÓDULO DE STOCK — localStorage: rdc_stock_maestro, rdc_stock_movs
+// ══════════════════════════════════════════════════════════════════
+
+// ── Storage helpers ──
+function getStockMaestro(){return JSON.parse(localStorage.getItem('rdc_stock_maestro')||'null');}
+function saveStockMaestro(m){localStorage.setItem('rdc_stock_maestro',JSON.stringify(m));}
+function getStockMovs(){return JSON.parse(localStorage.getItem('rdc_stock_movs')||'[]');}
+function saveStockMovs(a){localStorage.setItem('rdc_stock_movs',JSON.stringify(a));}
+
+// ── Subir Excel de stock inicial ──
+function handleStockFile(file){
+  if(!file)return;
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(!['xlsx','xls','csv'].includes(ext)){showStockMsg('stockUploadMsg','❌ Formato no soportado.','err');return;}
+  showStockMsg('stockUploadMsg','⏳ Leyendo archivo...','info');
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      let rows=[];
+      if(ext==='csv'){
+        rows=e.target.result.split('\n').map(l=>l.split(',').map(c=>c.trim().replace(/^"|"$/g,'')));
+      }else{
+        const wb=XLSX.read(e.target.result,{type:'array'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      }
+      if(rows.length<2){showStockMsg('stockUploadMsg','❌ El archivo parece vacío.','err');return;}
+
+      // Auto-detectar columnas (producto, cantidad, precio costo, precio venta)
+      const header=rows[0].map(h=>String(h).toLowerCase().trim());
+      const findCol=(terms)=>header.findIndex(h=>terms.some(t=>h.includes(t)));
+      const colProd=findCol(['product','descrip','nombre','artículo','articulo','item']);
+      const colCant=findCol(['cant','stock','cantidad','qty','existencia']);
+      const colCosto=findCol(['costo','cost','compra']);
+      const colVenta=findCol(['venta','precio','sale','pvp','price']);
+      if(colProd<0||colCant<0){showStockMsg('stockUploadMsg','❌ No se encontraron columnas de Producto y Cantidad. Verificá el encabezado.','err');return;}
+
+      const maestro={};
+      for(let i=1;i<rows.length;i++){
+        const r=rows[i];
+        const prod=String(r[colProd]||'').trim().toUpperCase();
+        const cant=parseFloat(String(r[colCant]||'0').replace(',','.'));
+        if(!prod||isNaN(cant))continue;
+        maestro[prod]={
+          stockInicial:cant,
+          stockActual:cant,
+          precioCosto:colCosto>=0?parseFloat(String(r[colCosto]||'0').replace(',','.'))||0:0,
+          precioVenta:colVenta>=0?parseFloat(String(r[colVenta]||'0').replace(',','.'))||0:0,
+          vendido:0,
+          claseABC:''
+        };
+      }
+      const n=Object.keys(maestro).length;
+      if(!n){showStockMsg('stockUploadMsg','❌ No se encontraron productos válidos.','err');return;}
+
+      saveStockMaestro(maestro);
+      saveStockMovs([]); // resetear movimientos al cargar stock nuevo
+      calcularClaseABC();
+      showStockMsg('stockUploadMsg',`✅ ${n} productos cargados. El stock se actualizará automáticamente con cada picking.`,'ok');
+      renderStockDashboard();
+    }catch(err){
+      console.error(err);
+      showStockMsg('stockUploadMsg','❌ Error al leer el archivo: '+err.message,'err');
+    }
+  };
+  if(ext==='csv')reader.readAsText(file,'utf-8');
+  else reader.readAsArrayBuffer(file);
+}
+
+// ── Descontar picking del stock (llamado automáticamente al confirmar asignación) ──
+function descontarPickingDeStock(pickingData,pickingNum){
+  const maestro=getStockMaestro();
+  if(!maestro)return; // no hay stock cargado, salteamos silenciosamente
+  const movs=getStockMovs();
+  const fecha=new Date().toLocaleDateString('es-AR');
+  let descontados=0,noEncontrados=[];
+
+  pickingData.forEach(r=>{
+    const desc=r.descripcion.trim().toUpperCase();
+    if(maestro[desc]!==undefined){
+      maestro[desc].stockActual=Math.max(0,maestro[desc].stockActual-r.cantidad);
+      maestro[desc].vendido+=r.cantidad;
+      descontados++;
+    }else{
+      // Buscar coincidencia parcial (primeras 30 chars)
+      const key=Object.keys(maestro).find(k=>k.startsWith(desc.slice(0,25))||desc.startsWith(k.slice(0,25)));
+      if(key){
+        maestro[key].stockActual=Math.max(0,maestro[key].stockActual-r.cantidad);
+        maestro[key].vendido+=r.cantidad;
+        descontados++;
+      }else{
+        noEncontrados.push(r.descripcion);
+      }
+    }
+  });
+
+  calcularClaseABC(maestro);
+  saveStockMaestro(maestro);
+  movs.push({picking:pickingNum,fecha,descontados,noEncontrados:noEncontrados.length});
+  saveStockMovs(movs);
+  if(noEncontrados.length){
+    console.warn(`Stock: ${noEncontrados.length} productos del picking no encontrados en el maestro:`,noEncontrados);
+  }
+}
+
+// ── Clasificación ABC por unidades vendidas ──
+function calcularClaseABC(maestro){
+  if(!maestro)maestro=getStockMaestro();
+  if(!maestro)return;
+  const items=Object.values(maestro).filter(v=>v.vendido>0);
+  const totalVendido=items.reduce((s,v)=>s+v.vendido,0);
+  if(!totalVendido){Object.values(maestro).forEach(v=>v.claseABC='C');saveStockMaestro(maestro);return;}
+
+  items.sort((a,b)=>b.vendido-a.vendido);
+  let acum=0;
+  items.forEach(v=>{
+    acum+=v.vendido/totalVendido;
+    v.claseABC=acum<=0.8?'A':acum<=0.95?'B':'C';
+  });
+  Object.values(maestro).filter(v=>!v.vendido).forEach(v=>v.claseABC='C');
+  saveStockMaestro(maestro);
+}
+
+// ── Render dashboard ──
+function renderStockDashboard(){
+  const maestro=getStockMaestro();
+  if(!maestro){document.getElementById('stockStats').style.display='none';document.getElementById('stockHistCard').style.display='none';return;}
+  document.getElementById('stockStats').style.display='';
+  document.getElementById('stockHistCard').style.display='';
+  renderStockMetrics(maestro);
+  renderStockTable();
+  renderStockHist();
+}
+
+function renderStockMetrics(maestro){
+  const vals=Object.values(maestro);
+  const totalProds=vals.length;
+  const sinStock=vals.filter(v=>v.stockActual<=0).length;
+  const bajo=vals.filter(v=>v.stockActual>0&&v.stockActual<=5).length;
+  const sinMov=vals.filter(v=>!v.vendido).length;
+  const valorCosto=vals.reduce((s,v)=>s+v.stockActual*v.precioCosto,0);
+  const valorVenta=vals.reduce((s,v)=>s+v.stockActual*v.precioVenta,0);
+  const claseA=vals.filter(v=>v.claseABC==='A').length;
+
+  document.getElementById('stockMetrics').innerHTML=[
+    {label:'Total productos',val:totalProds,color:'var(--rojo)'},
+    {label:'Clase A (top ventas)',val:claseA,color:'#27AE60'},
+    {label:'Sin stock',val:sinStock,color:'#E74C3C'},
+    {label:'Stock bajo (≤5)',val:bajo,color:'#E67E22'},
+    {label:'Sin movimiento',val:sinMov,color:'#7F8C8D'},
+    {label:'Valor stock (costo)',val:'$'+valorCosto.toLocaleString('es-AR',{minimumFractionDigits:0}),color:'#2980B9'},
+    {label:'Valor stock (venta)',val:'$'+valorVenta.toLocaleString('es-AR',{minimumFractionDigits:0}),color:'#8E44AD'},
+  ].map(m=>`<div style="background:#fff;border:1.5px solid var(--bd);border-radius:9px;padding:.6rem 1rem;min-width:130px">
+    <div style="font-size:11px;color:var(--tg)">${m.label}</div>
+    <div style="font-size:1.3rem;font-weight:800;color:${m.color}">${m.val}</div>
+  </div>`).join('');
+}
+
+const STOCK_COLS=['Producto','Clase','Stock Ini.','Vendido','Stock Act.','P.Costo','P.Venta','Val.Stock','Margen%'];
+function renderStockTable(){
+  const maestro=getStockMaestro();
+  if(!maestro)return;
+  const q=(document.getElementById('stockSearch').value||'').toUpperCase();
+  const filt=document.getElementById('stockFilter').value;
+
+  let items=Object.entries(maestro).map(([k,v])=>({desc:k,...v}));
+  if(q)items=items.filter(v=>v.desc.includes(q));
+  if(filt==='A')items=items.filter(v=>v.claseABC==='A');
+  else if(filt==='B')items=items.filter(v=>v.claseABC==='B');
+  else if(filt==='C')items=items.filter(v=>v.claseABC==='C');
+  else if(filt==='cero')items=items.filter(v=>v.stockActual<=0);
+  else if(filt==='bajo')items=items.filter(v=>v.stockActual>0&&v.stockActual<=5);
+  else if(filt==='sinmov')items=items.filter(v=>!v.vendido);
+
+  items.sort((a,b)=>b.vendido-a.vendido);
+
+  const CLASE_COLOR={A:'#27AE60',B:'#F39C12',C:'#95A5A6'};
+  const thead=`<thead><tr style="background:var(--rojo);color:#fff">${STOCK_COLS.map(c=>`<th style="padding:7px 10px;font-size:11.5px;white-space:nowrap;text-align:${['Stock Ini.','Vendido','Stock Act.','P.Costo','P.Venta','Val.Stock','Margen%'].includes(c)?'right':'left'}">${c}</th>`).join('')}</tr></thead>`;
+  const tbody=items.map((v,i)=>{
+    const valStock=v.stockActual*v.precioCosto;
+    const margen=v.precioVenta&&v.precioCosto?((v.precioVenta-v.precioCosto)/v.precioVenta*100).toFixed(1):'-';
+    const bg=v.stockActual<=0?'#FDEDEC':v.stockActual<=5?'#FEF5E7':i%2?'#fff':'#F8F9FA';
+    return`<tr style="background:${bg}">
+      <td style="padding:6px 10px;font-size:12px;max-width:280px">${esc(v.desc)}</td>
+      <td style="padding:6px 10px;text-align:center"><span style="background:${CLASE_COLOR[v.claseABC]||'#ccc'};color:#fff;border-radius:4px;padding:1px 7px;font-weight:700;font-size:11px">${v.claseABC||'-'}</span></td>
+      <td style="padding:6px 10px;text-align:right">${v.stockInicial}</td>
+      <td style="padding:6px 10px;text-align:right;font-weight:600;color:var(--rojo)">${v.vendido}</td>
+      <td style="padding:6px 10px;text-align:right;font-weight:700;color:${v.stockActual<=0?'#E74C3C':v.stockActual<=5?'#E67E22':'inherit'}">${v.stockActual}</td>
+      <td style="padding:6px 10px;text-align:right">$${v.precioCosto.toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+      <td style="padding:6px 10px;text-align:right">$${v.precioVenta.toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+      <td style="padding:6px 10px;text-align:right">$${valStock.toLocaleString('es-AR',{minimumFractionDigits:0})}</td>
+      <td style="padding:6px 10px;text-align:right">${margen}%</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('stockTable').innerHTML=thead+`<tbody>${tbody}</tbody>`;
+}
+
+function renderStockHist(){
+  const movs=getStockMovs();
+  if(!movs.length){document.getElementById('stockHist').innerHTML='<div style="color:var(--tg);padding:.5rem">Ningún picking procesado aún.</div>';return;}
+  document.getElementById('stockHist').innerHTML=movs.slice().reverse().map(m=>
+    `<div style="padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px">
+      <strong>${m.picking}</strong> · ${m.fecha} · ${m.descontados} productos descontados${m.noEncontrados?` · <span style="color:#E67E22">${m.noEncontrados} no encontrados en maestro</span>`:''}
+    </div>`
+  ).join('');
+}
+
+// ── Exportar Excel de stock ──
+function exportStockExcel(){
+  const maestro=getStockMaestro();
+  if(!maestro){alert('No hay stock cargado.');return;}
+  const items=Object.entries(maestro).map(([desc,v])=>({
+    Producto:desc,Clase:v.claseABC,'Stock Inicial':v.stockInicial,'Vendido':v.vendido,
+    'Stock Actual':v.stockActual,'Precio Costo':v.precioCosto,'Precio Venta':v.precioVenta,
+    'Valor Stock (costo)':v.stockActual*v.precioCosto,
+    'Margen%':v.precioVenta?((v.precioVenta-v.precioCosto)/v.precioVenta*100).toFixed(1):0
+  }));
+  items.sort((a,b)=>b.Vendido-a.Vendido);
+  const ws=XLSX.utils.json_to_sheet(items);
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Stock');
+  XLSX.writeFile(wb,'stock_reddecompras_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+function resetStock(){saveStockMaestro(null);saveStockMovs([]);renderStockDashboard();showStockMsg('stockUploadMsg','Stock reseteado.','info');}
+
+// ══ BACKUP: Exportar / Importar estado completo ══
+const BACKUP_KEYS=[
+  'rdc_stock_maestro','rdc_stock_movs',  // stock
+  'rdc_maestro3',                         // pasillos aprendidos
+  'rdc_direcciones','rdc_coords','rdc_coords_manual', // geocodificación
+  'rdc_pagos',                            // montos y forma de pago
+  'rdc_zona_nombres','rdc_zona_etiquetas',// nombres de choferes/zonas
+  'rdc_pasillos3'                         // configuración de pasillos personalizados
+];
+
+function exportarEstado(){
+  const estado={version:1,fecha:new Date().toISOString(),datos:{}};
+  BACKUP_KEYS.forEach(k=>{
+    const v=localStorage.getItem(k);
+    if(v)estado.datos[k]=JSON.parse(v);
+  });
+  const nProds=estado.datos['rdc_stock_maestro']?Object.keys(estado.datos['rdc_stock_maestro']).length:0;
+  const nMovs=estado.datos['rdc_stock_movs']?.length||0;
+  const nDir=estado.datos['rdc_direcciones']?Object.keys(estado.datos['rdc_direcciones']).length:0;
+  const blob=new Blob([JSON.stringify(estado,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const fecha=new Date().toLocaleDateString('es-AR').replace(/\//g,'-');
+  a.href=url;a.download=`estado_reddecompras_${fecha}.json`;a.click();
+  URL.revokeObjectURL(url);
+  showStockMsg('backupMsg',`✅ Estado guardado: ${nProds} productos en stock, ${nMovs} movimientos, ${nDir} direcciones de clientes.`,'ok');
+}
+
+function importarEstado(file){
+  if(!file)return;
+  if(!file.name.endsWith('.json')){showStockMsg('backupMsg','❌ Solo se aceptan archivos .json generados por este sistema.','err');return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const estado=JSON.parse(e.target.result);
+      if(!estado.version||!estado.datos){showStockMsg('backupMsg','❌ Archivo inválido — no parece un backup de este sistema.','err');return;}
+      const confirmMsg=`¿Restaurar el estado del ${new Date(estado.fecha).toLocaleDateString('es-AR')}?\nEsto REEMPLAZA todos los datos actuales (stock, direcciones, pasillos aprendidos, etc.).`;
+      if(!confirm(confirmMsg))return;
+      Object.entries(estado.datos).forEach(([k,v])=>localStorage.setItem(k,JSON.stringify(v)));
+      const nProds=estado.datos['rdc_stock_maestro']?Object.keys(estado.datos['rdc_stock_maestro']).length:0;
+      const nDir=estado.datos['rdc_direcciones']?Object.keys(estado.datos['rdc_direcciones']).length:0;
+      showStockMsg('backupMsg',`✅ Estado restaurado: ${nProds} productos, ${nDir} clientes con dirección.`,'ok');
+      renderStockDashboard();
+    }catch(err){
+      showStockMsg('backupMsg','❌ Error al leer el archivo: '+err.message,'err');
+    }
+  };
+  reader.readAsText(file,'utf-8');
+}
+
+function showStockMsg(id,msg,type){
+  const el=document.getElementById(id);if(!el)return;
+  const c={ok:'#27AE60',err:'#E74C3C',info:'#2980B9',warn:'#E67E22'}[type]||'#666';
+  el.innerHTML=msg?`<div style="color:${c};font-size:13px;margin-top:.4rem">${msg}</div>`:'';
 }
 
 // ══ UTIL ══
