@@ -1219,35 +1219,13 @@ function groupByProducto(items){
   const groups={};
   items.forEach(r=>{
     const key=r.descripcion;
-    if(!groups[key])groups[key]=[];
-    groups[key].push(r);
+    if(!groups[key]){groups[key]={descripcion:key,codigo:r.codigo,totalCantidad:0,clientes:[]};}
+    groups[key].totalCantidad+=r.cantidad;
+    groups[key].clientes.push(r.cliente||'—');
   });
-
-  const ordenMap=getOrdenClientes();
-  const zonaOrder={};
-  if(zonasState)zonasState.zonas.forEach((z,i)=>{zonaOrder[z.nombre]=i;});
-
-  function sortClientesDeProducto(rows){
-    return rows.slice().sort((a,b)=>{
-      const oa=ordenMap?.[a.cliente], ob=ordenMap?.[b.cliente];
-      if(oa&&ob){
-        const za=zonaOrder[oa.zonaNombre]??99, zb=zonaOrder[ob.zonaNombre]??99;
-        if(za!==zb)return za-zb;
-        if(oa.paradaNum!==ob.paradaNum)return oa.paradaNum-ob.paradaNum;
-      }else if(oa&&!ob)return -1;
-      else if(!oa&&ob)return 1;
-      return (a.cliente||'').localeCompare(b.cliente||'','es');
-    });
-  }
-
   return Object.keys(groups)
     .sort((a,b)=>a.localeCompare(b,'es'))
-    .map(desc=>({
-      descripcion:desc,
-      codigo:groups[desc][0].codigo,
-      rows:sortClientesDeProducto(groups[desc]),
-      totalCantidad:groups[desc].reduce((s,r)=>s+r.cantidad,0)
-    }));
+    .map(desc=>groups[desc]);
 }
 
 function groupByCliente(items){
@@ -1328,44 +1306,36 @@ function renderPickingOutput(){
     const items=dataFiltrada.filter(r=>r.pasillo_num===p.num);
     const sub=items.reduce((s,r)=>s+r.cantidad,0);
     const grupos=groupByProducto(items);
-    const nClientes=new Set(items.map(r=>r.cliente||'—')).size;
 
     let bodyHtml='';
     let rowCounter=0;
     grupos.forEach(g=>{
-      g.rows.forEach((r,ri)=>{
-        const rid=`c${p.num}_${rowCounter++}`;
-        // Badge de parada/zona solo si hay ruta calculada
-        const ord=getOrdenClientes()?.[r.cliente];
-        const badge='';
-        const esPrimera=ri===0;
-        bodyHtml+=`<tr id="row_${rid}" class="${esPrimera?'prod-first':''}">
-          <td style="text-align:center"><input type="checkbox" id="${rid}" style="width:16px;height:16px;cursor:pointer;accent-color:${p.color}" onchange="tick('${rid}')"></td>
-          <td style="text-align:center;font-weight:700;color:${p.color}">P${p.num}</td>
-          <td style="text-align:center;font-weight:700;font-size:14px">${r.cantidad}</td>
-          <td>${esc(g.descripcion)}</td>
-          <td style="font-size:12px;color:var(--tg)">👤 ${esc(r.cliente||'—')}${badge}</td>
-        </tr>`;
-      });
+      const rid=`c${p.num}_${rowCounter++}`;
+      bodyHtml+=`<tr id="row_${rid}">
+        <td style="text-align:center"><input type="checkbox" id="${rid}" style="width:16px;height:16px;cursor:pointer;accent-color:${p.color}" onchange="tick('${rid}')"></td>
+        <td style="text-align:center;font-weight:700;color:${p.color}">P${p.num}</td>
+        <td style="text-align:center;font-weight:700;font-size:14px">${g.totalCantidad}</td>
+        <td>${esc(g.descripcion)}</td>
+      </tr>`;
     });
 
     html+=`<div class="p-section">
       <div class="p-hdr" style="background:${p.color}">
         <span>📦 ${esc(p.nombre)}</span>
-        <span class="ph-r">${grupos.length} producto${grupos.length!==1?'s':''} · ${sub} uds. · ${nClientes} cliente${nClientes!==1?'s':''}</span>
+        <span class="ph-r">${grupos.length} producto${grupos.length!==1?'s':''} · ${sub} uds.</span>
       </div>
       <table><thead><tr>
         <th style="width:34px;text-align:center">✓</th>
         <th style="width:50px;text-align:center">Pasillo</th>
         <th style="width:60px;text-align:center">Cant.</th>
         <th>Producto</th>
-        <th style="width:160px">Cliente</th>
       </tr></thead><tbody>
       ${bodyHtml}
       </tbody>
       <tfoot><tr>
-        <td colspan="3" style="text-align:right;background:${p.color}20;color:${p.color};font-weight:700;padding:7px 11px">Subtotal ${esc(p.nombre)}</td>
-        <td style="text-align:center;background:${p.color}20;color:${p.color};font-weight:700;font-size:14px;padding:7px 11px" colspan="2">${sub}</td>
+        <td colspan="2" style="text-align:right;background:${p.color}20;color:${p.color};font-weight:700;padding:7px 11px">Subtotal ${esc(p.nombre)}</td>
+        <td style="text-align:center;background:${p.color}20;color:${p.color};font-weight:700;font-size:14px;padding:7px 11px">${sub}</td>
+        <td style="background:${p.color}20"></td>
       </tr></tfoot>
       </table></div>`;
   });
@@ -1432,23 +1402,18 @@ function renderExport(){
     const sub=items.reduce((s,r)=>s+r.cantidad,0);
     const grupos=groupByProducto(items);
     html+=`<div style="background:${p.color}18;border-left:4px solid ${p.color};padding:7px 14px;font-weight:700;font-size:13px;color:${p.color}">
-      📦 ${esc(p.nombre)} — ${items.length} ítems · ${sub} uds.</div>
+      📦 ${esc(p.nombre)} — ${grupos.length} productos · ${sub} uds.</div>
     <table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead><tr style="background:${p.color}">
         <th style="padding:5px 10px;color:#fff;width:45px;text-align:center">Pasillo</th>
         <th style="padding:5px 10px;color:#fff;width:55px;text-align:center">Cant.</th>
         <th style="padding:5px 10px;color:#fff">Producto</th>
-        <th style="padding:5px 10px;color:#fff;width:140px">Cliente</th>
       </tr></thead><tbody>
-      ${grupos.map(g=>g.rows.map((r,i)=>{
-        const ord=getOrdenClientes()?.[r.cliente];
-        const paradaTxt='';        return`<tr style="background:${i%2?'#fff':p.color+'0d'}">
-          <td style="padding:6px 10px;text-align:center;color:var(--tg);font-weight:700">P${p.num}</td>
-          <td style="padding:6px 10px;text-align:center;font-weight:700">${r.cantidad}</td>
-          <td style="padding:6px 10px">${esc(g.descripcion)}</td>
-          <td style="padding:6px 10px;font-size:11px;color:var(--tg)">👤 ${esc(r.cliente||'—')}${paradaTxt}</td>
-        </tr>`;
-      }).join('')).join('')}</tbody></table>`;
+      ${grupos.map((g,i)=>`<tr style="background:${i%2?'#fff':p.color+'0d'}">
+        <td style="padding:6px 10px;text-align:center;color:var(--tg);font-weight:700">P${p.num}</td>
+        <td style="padding:6px 10px;text-align:center;font-weight:700">${g.totalCantidad}</td>
+        <td style="padding:6px 10px">${esc(g.descripcion)}</td>
+      </tr>`).join('')}</tbody></table>`;
   });
   html+=`<div style="background:var(--azul);color:#fff;padding:8px 14px;font-weight:700;font-size:13px;display:flex;justify-content:space-between">
     <span>TOTAL — ${dataF.length} productos</span><span>${tot} uds.</span></div></div>`;
@@ -1530,22 +1495,10 @@ function exportPDF(){
     doc.text(`P${p.num} — ${p.nombre.replace(/^Pasillo \d+ — /,'')}  ·  ${grupos.length} prod. · ${sub} uds.`,13,y+4.2);
     y+=7;
 
-    // Armar body: una fila por (producto, cliente). Orden: Pasillo · Cantidad · Producto · Cliente
-    // La descripción del producto se repite en cada fila (no se deja en blanco).
+    // Armar body: una fila por producto con cantidad total sumada, sin columna cliente
     const body=[];
-    const firstRowsOfGroup=new Set(); // índices de body que son "primera fila" de su producto
     grupos.forEach(g=>{
-      g.rows.forEach((r,ri)=>{
-        if(ri===0)firstRowsOfGroup.add(body.length);
-        const ord=getOrdenClientes()?.[r.cliente];
-        const clienteTxt=r.cliente||m.suc;
-        body.push([
-          `P${p.num}`,
-          r.cantidad,
-          g.descripcion,
-          clienteTxt
-        ]);
-      });
+      body.push([`P${p.num}`, g.totalCantidad, g.descripcion]);
     });
 
     doc.autoTable({
@@ -1559,15 +1512,7 @@ function exportPDF(){
       columnStyles:{
         0:{cellWidth:13,halign:'center'},
         1:{cellWidth:14,halign:'center',fontStyle:'bold'},
-        2:{cellWidth:'auto'},
-        3:{cellWidth:42}
-      },
-      didParseCell:(d)=>{
-        // Línea superior más marcada cuando empieza un nuevo producto
-        if(d.section==='body'&&firstRowsOfGroup.has(d.row.index)&&d.row.index>0){
-          d.cell.styles.lineWidth={top:0.5,right:0.1,bottom:0.1,left:0.1};
-          d.cell.styles.lineColor=[180,180,180];
-        }
+        2:{cellWidth:'auto'}
       },
       margin:{left:10,right:10},
       tableLineColor:[220,220,220],
