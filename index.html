@@ -1523,10 +1523,11 @@ function exportPDF(){
     doc.text(`P${p.num} — ${p.nombre.replace(/^Pasillo \d+ — /,'')}  ·  ${grupos.length} prod. · ${sub} uds.`,13,y+4.2);
     y+=7;
 
-    // Armar body: una fila por producto con cantidad total sumada, sin columna cliente
+    // Armar body: una fila por producto con cantidad total sumada
+    // Incluye Código (para cruce de maestro) — solo en este PDF, no en pantalla/preview
     const body=[];
     grupos.forEach(g=>{
-      body.push([`P${p.num}`, g.totalCantidad, g.descripcion]);
+      body.push([`P${p.num}`, g.codigo||'—', g.totalCantidad, g.descripcion]);
     });
 
     doc.autoTable({
@@ -1539,8 +1540,9 @@ function exportPDF(){
       alternateRowStyles:{fillColor:[248,249,250]},
       columnStyles:{
         0:{cellWidth:13,halign:'center'},
-        1:{cellWidth:14,halign:'center',fontStyle:'bold'},
-        2:{cellWidth:'auto'}
+        1:{cellWidth:16,halign:'center',fontSize:7},
+        2:{cellWidth:14,halign:'center',fontStyle:'bold'},
+        3:{cellWidth:'auto'}
       },
       margin:{left:10,right:10},
       tableLineColor:[220,220,220],
