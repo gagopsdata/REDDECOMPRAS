@@ -249,7 +249,6 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
       <thead><tr>
         <th style="width:75px">Código</th>
         <th>Descripción</th>
-        <th style="width:120px">Cliente</th>
         <th style="width:85px;text-align:center">Cant.</th>
         <th style="width:185px">Pasillo</th>
       </tr></thead>
@@ -1127,8 +1126,22 @@ function pOpts(selNum){
 
 function renderAssign(q=''){
   const ql=(q||'').toLowerCase();
-  const rows=data.map((r,i)=>({...r,_i:i}))
-    .filter(r=>!ql||r.descripcion.toLowerCase().includes(ql)||r.codigo.toLowerCase().includes(ql));
+
+  // Agrupar por descripción (mismo criterio que el picking final): una fila por producto,
+  // con la cantidad total sumada de todos los clientes que lo pidieron.
+  const grupos={};
+  data.forEach((r,i)=>{
+    const key=r.descripcion;
+    if(!grupos[key])grupos[key]={descripcion:key,codigo:r.codigo,cantidad:0,pasillo_num:r.pasillo_num,indices:[]};
+    grupos[key].cantidad+=r.cantidad;
+    grupos[key].indices.push(i);
+    // Si por algún motivo las filas del mismo producto tuvieran pasillos distintos
+    // (no debería pasar), se respeta el del primero encontrado.
+  });
+
+  const gruposArr=Object.values(grupos)
+    .filter(g=>!ql||g.descripcion.toLowerCase().includes(ql)||g.codigo.toLowerCase().includes(ql))
+    .sort((a,b)=>a.descripcion.localeCompare(b.descripcion,'es'));
 
   const asig=data.filter(r=>r.pasillo_num).length;
   const sinP=data.filter(r=>!r.pasillo_num).length;
@@ -1140,33 +1153,30 @@ function renderAssign(q=''){
   document.getElementById('blockBanner').style.display=sinP>0?'flex':'none';
   document.getElementById('btnPicking').disabled=sinP>0;
 
-  document.getElementById('aBody').innerHTML=rows.map(r=>`
-    <tr class="${!r.pasillo_num?'sinpasillo':''}">
-      <td style="font-size:12px;color:var(--tg)">${esc(r.codigo)}</td>
-      <td>${esc(r.descripcion)}</td>
-      <td style="font-size:12px">
-        <input type="text" value="${esc(r.cliente)}" placeholder="${esc(getMeta().suc||'—')}"
-          style="width:100%;padding:4px 7px;border:1.5px solid var(--bd);border-radius:5px;font-size:12px;outline:none;font-family:inherit"
-          onfocus="this.style.borderColor='var(--rojo)'" onblur="this.style.borderColor='var(--bd)'"
-          onchange="data[${r._i}].cliente=this.value">
-      </td>
-      <td style="text-align:center;font-weight:600">${r.cantidad}</td>
+  document.getElementById('aBody').innerHTML=gruposArr.map(g=>`
+    <tr class="${!g.pasillo_num?'sinpasillo':''}">
+      <td style="font-size:12px;color:var(--tg)">${esc(g.codigo)}</td>
+      <td>${esc(g.descripcion)}</td>
+      <td style="text-align:center;font-weight:600">${g.cantidad}</td>
       <td>
-        <select class="ps-sel${!r.pasillo_num?' unset':''}" onchange="setP(${r._i},this)">
-          ${pOpts(r.pasillo_num)}
+        <select class="ps-sel${!g.pasillo_num?' unset':''}" onchange="setPGrupo([${g.indices.join(',')}],this)">
+          ${pOpts(g.pasillo_num)}
         </select>
       </td>
     </tr>`).join('');
 
   const tot=data.reduce((s,r)=>s+r.cantidad,0);
   document.getElementById('aFoot').innerHTML=
-    `<tr><td colspan="2">${data.length} productos</td><td></td><td style="text-align:center">${tot}</td><td></td></tr>`;
+    `<tr><td colspan="2">${gruposArr.length} productos</td><td style="text-align:center">${tot}</td><td></td></tr>`;
 }
 
-function setP(i,sel){
-  data[i].pasillo_num=parseInt(sel.value)||null;
-  sel.className='ps-sel'+(data[i].pasillo_num?'':' unset');
-  sel.closest('tr').className=data[i].pasillo_num?'':'sinpasillo';
+// Asigna el pasillo elegido a TODAS las filas de data que pertenecen a este producto agrupado
+// (un producto puede tener varias filas internas, una por cliente que lo pidió)
+function setPGrupo(indices,sel){
+  const num=parseInt(sel.value)||null;
+  indices.forEach(i=>{data[i].pasillo_num=num;});
+  sel.className='ps-sel'+(num?'':' unset');
+  sel.closest('tr').className=num?'':'sinpasillo';
   // Actualizar stats
   const asig=data.filter(r=>r.pasillo_num).length;
   const sinP=data.filter(r=>!r.pasillo_num).length;
