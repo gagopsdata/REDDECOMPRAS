@@ -590,10 +590,21 @@ function confirmar(){
   document.getElementById('blockBanner').style.display='none';
   document.getElementById('btnPicking').disabled=false;
   const st=getMaestroStats();
-  showMsg('p4msg',`✅ Asignación confirmada. Maestro: ${st.total} productos aprendidos (${st.byCod} por código, ${st.byDesc} por descripción).`,'ok');
   // Descontar este picking del stock (si hay stock cargado)
   descontarPickingDeStock(data, getMeta().num||'picking');
-  setTimeout(()=>goStep(4),700);
+
+  // ── Si se usó reparto con 1 solo vehículo (o no se usó reparto), exportar
+  // el PDF del picking completo automáticamente y quedarse en esta pantalla.
+  // Si hay 2+ vehículos, avanzar al paso de Exportar para elegir chofer. ──
+  const zonasConParadas=zonasState?zonasState.zonas.filter(z=>z.clientes.length>0):[];
+  if(zonasConParadas.length<=1){
+    showMsg('p4msg',`✅ Asignación confirmada. Descargando picking...`,'ok');
+    // filtroZona en '' = picking completo (sin filtrar por chofer)
+    setTimeout(()=>{exportPDF();},400);
+  }else{
+    showMsg('p4msg',`✅ Asignación confirmada. Maestro: ${st.total} productos aprendidos (${st.byCod} por código, ${st.byDesc} por descripción).`,'ok');
+    setTimeout(()=>goStep(4),700);
+  }
 }
 
 // ══ FILE ══
