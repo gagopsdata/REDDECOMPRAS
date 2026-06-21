@@ -123,9 +123,7 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
 .zona-hdr input::placeholder{color:rgba(255,255,255,.7)}
 .zona-hdr .ph-r{margin-left:auto;font-size:12px;opacity:.9;white-space:nowrap}
 .zona-body{background:#fff;padding:.5rem 1rem;min-height:50px}
-.cliente-chip{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);margin-bottom:6px;cursor:grab;font-size:13px;transition:box-shadow .15s,transform .1s;flex-wrap:wrap}
-.cliente-chip:active{cursor:grabbing}
-.cliente-chip.dragging{opacity:.4}
+.cliente-chip{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);margin-bottom:6px;font-size:13px;transition:box-shadow .15s,transform .1s;flex-wrap:wrap}
 .cliente-chip .cc-num{width:22px;height:22px;border-radius:50%;background:var(--rojo);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .cliente-chip .cc-info{flex:1;min-width:120px}
 .cliente-chip .cc-cliente{font-weight:600}
@@ -1818,13 +1816,24 @@ function elegirOpcionVehiculos(k){
       etiqueta:savedEtiquetas[i]||ZONA_ETIQUETAS_DEFAULT[i],
       color:ZONA_COLORS[i],
       clientes:pts,
-      ruta:rutas[i]||null // ya calculada
+      ruta:rutas[i]||null // ya calculada, ruta óptima por tiempo
     }))
   };
 
-  const nVeh=zonasState.zonas.filter(z=>z.clientes.length).length;
-  showMsg('zonasMsg',`✅ ${nVeh} vehículo${nVeh!==1?'s':''} seleccionado${nVeh!==1?'s':''}. Podés arrastrar clientes entre zonas y recalcular si hace falta.`,'ok');
+  const zonasConParadas=zonasState.zonas.filter(z=>z.clientes.length>0);
+  showMsg('zonasMsg',`⏳ Generando y descargando ${zonasConParadas.length} hoja${zonasConParadas.length!==1?'s':''} de ruta...`,'info');
   renderZonas();
+
+  // ── Descarga automática: una hoja de ruta por cada chofer con paradas, sin botones ni confirmación ──
+  // Pequeño delay entre descargas para que el navegador no las bloquee como popup spam
+  zonasState.zonas.forEach((z,zi)=>{
+    if(!z.clientes.length)return;
+    setTimeout(()=>exportRutaPDF(zi),zi*400);
+  });
+
+  setTimeout(()=>{
+    showMsg('zonasMsg',`✅ ${zonasConParadas.length} vehículo${zonasConParadas.length!==1?'s':''} — hojas de ruta descargadas automáticamente.`,'ok');
+  },zonasConParadas.length*400+300);
 }
 
 // ══ K-MEANS simple sobre lat/lng ══
@@ -1874,15 +1883,16 @@ function saveZonaNombres(arr){localStorage.setItem('rdc_zona_nombres',JSON.strin
 function getZonaEtiquetas(){return JSON.parse(localStorage.getItem('rdc_zona_etiquetas')||'[]')}
 function saveZonaEtiquetas(arr){localStorage.setItem('rdc_zona_etiquetas',JSON.stringify(arr))}
 
-// ══ RENDER ZONAS (con drag & drop) ══
+// ══ RENDER ZONAS (solo lectura — las hojas de ruta ya se descargaron automáticamente) ══
 function renderZonas(){
   if(!zonasState)return;
   const {zonas}=zonasState;
 
-  let html=`<div class="card"><div class="ct">Zonas propuestas — arrastrá clientes para ajustar</div>`;
+  let html=`<div class="card"><div class="ct">Zonas y choferes asignados</div>`;
   html+=`<div id="mapaZonas"></div>`;
 
   zonas.forEach((z,zi)=>{
+    if(!z.clientes.length)return; // no mostrar zonas vacías, ya no hay drag&drop para llenarlas
     html+=`<div class="zona-card" style="border-color:${z.color}55">
       <div class="zona-hdr" style="background:${z.color}">
         <span>🚚</span>
@@ -1892,22 +1902,18 @@ function renderZonas(){
       </div>
       <div class="zona-body">
         <div class="zona-dropzone" id="dropzone_${zi}" data-zona="${zi}">
-          ${z.clientes.length?z.clientes.map((p,pi)=>clienteChipHtml(p,zi,pi,z.color)).join(''):'<div class="zona-empty">Sin clientes — arrastrá uno aquí</div>'}
+          ${z.clientes.map((p,pi)=>clienteChipHtml(p,zi,pi,z.color)).join('')}
         </div>
       </div>
     </div>`;
   });
 
-  html+=`<div style="text-align:center;margin-top:.5rem">
-    <button class="btn btn-r" onclick="calcularRutasZonas()" id="btnCalcRutas">🗺️ Calcular rutas de todas las zonas</button>
-  </div>
-  <div id="rutasMsg" style="margin-top:.5rem;text-align:center"></div>
+  html+=`<div id="rutasMsg" style="margin-top:.5rem;text-align:center"></div>
   </div>`;
 
   html+=`<div id="rutasResult"></div>`;
 
   document.getElementById('zonasResult').innerHTML=html;
-  setupDragDrop();
   loadLeaflet(()=>renderMapaZonas());
   // Si ya había rutas calculadas (al volver a este paso), mostrarlas de nuevo
   if(zonas.some(z=>z.ruta))renderRutasResult();
@@ -1931,7 +1937,7 @@ function getPagoCliente(cliente){
 
 function clienteChipHtml(p,zi,pi,color){
   const pago=getPagoCliente(p.cliente);
-  return`<div class="cliente-chip" draggable="true" data-zi="${zi}" data-pi="${pi}" style="border-left:4px solid ${color}">
+  return`<div class="cliente-chip" style="border-left:4px solid ${color}">
     <div class="cc-num" style="background:${color}">${pi+1}</div>
     <div class="cc-info">
       <div class="cc-cliente">${esc(p.cliente)}</div>
@@ -1954,44 +1960,6 @@ function relabelZona(zi,val){
   zonasState.zonas[zi].etiqueta=val;
   const etiquetas=zonasState.zonas.map(z=>z.etiqueta);
   saveZonaEtiquetas(etiquetas);
-}
-
-// Drag & drop entre zonas
-function setupDragDrop(){
-  document.querySelectorAll('.cliente-chip').forEach(chip=>{
-    chip.addEventListener('dragstart',e=>{
-      chip.classList.add('dragging');
-      e.dataTransfer.setData('text/plain',JSON.stringify({zi:chip.dataset.zi,pi:chip.dataset.pi}));
-    });
-    chip.addEventListener('dragend',()=>chip.classList.remove('dragging'));
-    // Evitar que clickear/escribir en los campos de pago dispare el drag
-    chip.querySelectorAll('.cc-monto').forEach(el=>{
-      el.addEventListener('mousedown',e=>e.stopPropagation());
-      el.addEventListener('click',e=>e.stopPropagation());
-    });
-  });
-  document.querySelectorAll('.zona-dropzone').forEach(zone=>{
-    zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('dragover');});
-    zone.addEventListener('dragleave',()=>zone.classList.remove('dragover'));
-    zone.addEventListener('drop',e=>{
-      e.preventDefault();
-      zone.classList.remove('dragover');
-      const data=JSON.parse(e.dataTransfer.getData('text/plain'));
-      const fromZi=parseInt(data.zi),fromPi=parseInt(data.pi);
-      const toZi=parseInt(zone.dataset.zona);
-      if(fromZi===toZi)return;
-
-      // Mover el cliente de una zona a otra
-      const [moved]=zonasState.zonas[fromZi].clientes.splice(fromPi,1);
-      zonasState.zonas[toZi].clientes.push(moved);
-
-      // Invalidar rutas calculadas y descargas previas (cambió la composición)
-      zonasState.zonas.forEach(z=>{z.ruta=null;z.rutaDescargada=false;});
-      document.getElementById('rutasResult').innerHTML='';
-
-      renderZonas();
-    });
-  });
 }
 
 function renderMapaZonas(){
