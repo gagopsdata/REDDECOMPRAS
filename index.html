@@ -2415,8 +2415,6 @@ function exportRutaPDF(zi){
 
   doc.save(`hoja_ruta_${m.num}_${z.nombre.replace(/\s+/g,'_')}.pdf`);
   z.rutaDescargada=true;
-  // Refrescar la vista para que se vea el check de "descargada" en la tarjeta de zona
-  renderRutasResult();
 }
 
 // ══════════════════════════════════════════════════════════════════
