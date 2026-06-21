@@ -171,9 +171,8 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
 <div class="steps">
   <button class="step active" id="s1" onclick="goStep(1)"><span class="sn">1</span> Cargar Excel</button>
   <button class="step" id="s2" onclick="goStep(2)"><span class="sn">2</span> Reparto</button>
-  <button class="step" id="s3" onclick="goStep(3)"><span class="sn">3</span> Pasillos</button>
-  <button class="step" id="s4" onclick="goStep(4)"><span class="sn">4</span> Asignar</button>
-  <button class="step" id="s6" onclick="goStep(6)"><span class="sn">5</span> Exportar</button>
+  <button class="step" id="s4" onclick="goStep(4)"><span class="sn">3</span> Asignar</button>
+  <button class="step" id="s6" onclick="goStep(6)"><span class="sn">4</span> Exportar</button>
   <button class="step" id="s7" onclick="goStep(7)" style="border-left:3px solid var(--verde);margin-left:.5rem"><span class="sn" style="background:var(--verde)">📦</span> Stock</button>
 </div>
 <div class="main">
@@ -260,7 +259,7 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
   </div>
   <div id="p4msg" style="margin-top:.75rem"></div>
   <div class="nav" style="margin-top:.9rem">
-    <button class="btn btn-g" onclick="goStep(3)">← Pasillos</button>
+    <button class="btn btn-g" onclick="goStep(2)">← Reparto</button>
     <button class="btn btn-v" onclick="confirmar()">💾 Confirmar y guardar</button>
     <button class="btn btn-r" id="btnPicking" onclick="goStep(6)" disabled>Exportar →</button>
   </div>
@@ -339,7 +338,7 @@ tfoot td{background:var(--azul);color:#fff;font-weight:700;font-size:12px;paddin
 
   <div class="nav">
     <button class="btn btn-g" onclick="goStep(1)">← Cargar Excel</button>
-    <button class="btn btn-r" onclick="goStep(3)">Pasillos →</button>
+    <button class="btn btn-r" onclick="goStep(4)">Asignar →</button>
   </div>
 </div>
 
@@ -1075,8 +1074,9 @@ function goStep(n){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+n).classList.add('active');
   updateTopChip();
-  // Mapeo paso interno -> posición visual en la nav (5 botones de flujo: 1,2,3,4,6→5; s7=Stock es independiente)
-  const visualPos=n===6?5:n;
+  // Mapeo paso interno -> posición visual en la nav (4 botones de flujo: 1,2,4→3,6→4; s7=Stock es independiente)
+  const visualMap={1:1,2:2,4:3,6:4};
+  const visualPos=visualMap[n]||0;
   document.querySelectorAll('.step').forEach((s,i)=>{
     if(s.id==='s7'){s.classList.toggle('active',n===7);return;} // Stock: activo solo cuando está en panel-7
     s.classList.remove('active','done');
