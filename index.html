@@ -669,71 +669,13 @@ async function processPDF(f){
       return processPDF_InformeEntrega(f,pdf,allItems,fullText);
     }
 
-    autoDetectPDFMeta(fullText);
-
-    // Layout Red de Compras (coordenadas X reales del PDF):
-    // Código:      x < 62
-    // Descripción: 62 <= x < 480
-    // Cantidad:    480 <= x < 530
-    // Fecha:       x >= 530
-    const COD_MAX=62, DESC_MAX=480, CANT_MAX=530;
-
-    const rowMap={};
-    allItems.forEach(item=>{
-      const key=item.page*100000 + Math.round(item.y/6)*6;
-      if(!rowMap[key])rowMap[key]={y:item.y,page:item.page,cod:[],desc:[],cant:[],fecha:[]};
-      const r=rowMap[key];
-      if(item.x<COD_MAX)       r.cod.push(item);
-      else if(item.x<DESC_MAX) r.desc.push(item);
-      else if(item.x<CANT_MAX) r.cant.push(item);
-      else                     r.fecha.push(item);
-    });
-
-    const SKIP_RE=/^(c[oó]digo|descripci|cant[.:]|fecha|observaci|emitido|sucursal|cuit|domicilio|tel|email|red de|transporte|chofer|n[uú]mero|picking|p[aá]gina|volumen|peso|flete)/i;
-
-    const results=[];
-    const sorted=Object.values(rowMap).sort((a,b)=>a.page-b.page||a.y-b.y);
-
-    for(const row of sorted){
-      const codStr=row.cod.map(i=>i.str).join('').trim();
-      const cantStr=row.cant.map(i=>i.str).join('').trim();
-      const descStr=row.desc.sort((a,b)=>a.x-b.x).map(i=>i.str).join(' ').trim();
-      const fechaStr=row.fecha.map(i=>i.str).join('').trim();
-
-      if(!/^\d{1,6}$/.test(codStr))continue;
-      if(!/\d{1,2}\/\d{1,2}\/\d{2,4}/.test(fechaStr))continue;
-      if(!descStr||SKIP_RE.test(descStr))continue;
-
-      const cantidad=parseFloat(cantStr.replace(',','.'));
-      if(isNaN(cantidad)||cantidad<=0)continue;
-
-      results.push({codigo:codStr,descripcion:descStr,cantidad,cliente:''});
-    }
-
-    if(!results.length){
-      showAlert('p1alert','⚠️ No se encontraron productos. Verificá que sea un PDF de picking de Red de Compras.','warn');
-      return;
-    }
-
-    rawHeaders=['Código','Descripción','Cantidad','Cliente'];
-    rawRows=results.map(r=>[r.codigo,r.descripcion,r.cantidad,r.cliente]);
-    colCod=0;colDesc=1;colCant=2;colCliente=3;
-
-    const totalUds=results.reduce((s,r)=>s+r.cantidad,0);
-    document.getElementById('fchip').innerHTML=`
-      <div class="fchip"><span class="ico">📄</span>
-        <div>
-          <div class="nm">${f.name}</div>
-          <div class="mt">PDF · ${pdf.numPages} página${pdf.numPages>1?'s':''} · ${(f.size/1024).toFixed(1)} KB · <strong>${results.length} productos · ${totalUds} uds.</strong></div>
-        </div>
-        <button class="rm" onclick="clearFile()">✕</button>
-      </div>`;
-
+    // ── Bloqueo: el formato "Picking" (sin cliente/dirección/monto) ya no se acepta.
+    // Solo se procesa el formato "Informe de Entrega". ──
+    showAlert('p1alert','🚫 Este PDF tiene formato "Picking" y no se acepta. Subí el PDF en formato <strong>"Informe de Entrega"</strong> (con cliente, domicilio y saldo de cada nota de venta).','err');
     document.getElementById('cardCols').style.display='none';
-    document.getElementById('cardMeta').style.display='block';
-    document.getElementById('btnN1').disabled=false;
-    showAlert('p1alert',`✅ ${results.length} productos extraídos — ${totalUds} unidades totales.`,'ok');
-
+    document.getElementById('cardMeta').style.display='none';
+    document.getElementById('btnN1').disabled=true;
+    return;
   }catch(err){
     console.error(err);
     showAlert('p1alert','❌ Error: '+err.message,'err');
@@ -1066,6 +1008,19 @@ function goStep(n){
     saveMeta();
   }
   if(n>=3)savePasillos();
+
+  // ── Bloqueo: no avanzar a Asignar/Exportar sin haber descargado la hoja de ruta
+  // de CADA zona/chofer que tenga paradas asignadas ──
+  if((n===4||n===5||n===6)&&zonasState){
+    const zonasConParadas=zonasState.zonas.filter(z=>z.clientes.length>0);
+    const faltantes=zonasConParadas.filter(z=>!z.rutaDescargada);
+    if(faltantes.length){
+      const nombres=faltantes.map(z=>z.nombre).join(', ');
+      showMsg('zonasMsg',`🔒 Descargá la hoja de ruta de: ${nombres}, antes de continuar.`,'err');
+      goStep(2);return;
+    }
+  }
+
   if((n===5||n===6)&&data.some(r=>!r.pasillo_num)){
     showMsg('p4msg','🔒 Confirmá la asignación primero.','err');
     goStep(4);return;
@@ -2030,8 +1985,8 @@ function setupDragDrop(){
       const [moved]=zonasState.zonas[fromZi].clientes.splice(fromPi,1);
       zonasState.zonas[toZi].clientes.push(moved);
 
-      // Invalidar rutas calculadas (cambió la composición)
-      zonasState.zonas.forEach(z=>z.ruta=null);
+      // Invalidar rutas calculadas y descargas previas (cambió la composición)
+      zonasState.zonas.forEach(z=>{z.ruta=null;z.rutaDescargada=false;});
       document.getElementById('rutasResult').innerHTML='';
 
       renderZonas();
@@ -2084,8 +2039,10 @@ async function calcularRutasZonas(){
   showMsg('rutasMsg','⏳ Calculando rutas óptimas por zona...','info');
 
   try{
-    // Cálculo inicial de cada zona
+    // Cálculo inicial de cada zona — recalcular invalida cualquier descarga previa
+    // (las paradas pudieron cambiar por drag&drop, hay que volver a descargar)
     for(const z of zonasState.zonas){
+      z.rutaDescargada=false;
       if(!z.clientes.length){z.ruta=null;continue;}
       z.ruta=await calcularRutaOSRM(zonasState.deposito,z.clientes);
     }
@@ -2236,8 +2193,11 @@ function renderRutasResult(){
     const excedido=tiempoTotal>TIEMPO_MAX_MIN;
     const horas=Math.floor(tiempoTotal/60), mins=Math.round(tiempoTotal%60);
 
-    html+=`<div class="card">
-      <div class="ct" style="color:${z.color}">🚚 ${esc(z.nombre)}</div>
+    html+=`<div class="card" style="${z.rutaDescargada?'border-color:#27AE60':''}">
+      <div class="ct" style="color:${z.color};display:flex;align-items:center;gap:8px">
+        🚚 ${esc(z.nombre)}
+        ${z.rutaDescargada?'<span style="background:#27AE60;color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700">✓ Hoja de ruta descargada</span>':'<span style="background:#E67E22;color:#fff;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700">⚠ Falta descargar</span>'}
+      </div>
       <div class="ruta-summary">
         <div class="ruta-chip"><strong>${z.clientes.length}</strong> paradas</div>
         <div class="ruta-chip"><strong>${totalKm.toFixed(1)}</strong> km</div>
@@ -2270,7 +2230,9 @@ function renderRutasResult(){
     </div>`;
 
     html+=`<div style="margin-top:1rem">
-      <button class="btn btn-v dl-btn" style="width:100%" onclick="exportRutaPDF(${zi})">📄 Descargar hoja de ruta — ${esc(z.nombre)}<small>.pdf — para el chofer</small></button>
+      <button class="btn ${z.rutaDescargada?'btn-g':'btn-v'} dl-btn" style="width:100%" onclick="exportRutaPDF(${zi})">
+        ${z.rutaDescargada?'🔄 Volver a descargar':'📄 Descargar hoja de ruta'} — ${esc(z.nombre)}<small>.pdf — para el chofer</small>
+      </button>
     </div>
     </div>`;
   });
@@ -2418,6 +2380,9 @@ function exportRutaPDF(zi){
   doc.text('Red de Compras SAS · Sistema de Picking',15,290);
 
   doc.save(`hoja_ruta_${m.num}_${z.nombre.replace(/\s+/g,'_')}.pdf`);
+  z.rutaDescargada=true;
+  // Refrescar la vista para que se vea el check de "descargada" en la tarjeta de zona
+  renderRutasResult();
 }
 
 // ══════════════════════════════════════════════════════════════════
